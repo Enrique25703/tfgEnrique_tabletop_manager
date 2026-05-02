@@ -52,6 +52,16 @@
         text-align: center;
         color: #6b7280;
       }
+
+      .button {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 14px;
+        background: #111827;
+        color: #ffffff;
+        font-weight: 700;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
@@ -61,6 +71,7 @@
 
     <h1>Menu principal</h1>
     <p class="subtitle">Listado completo de usuarios registrados en la base de datos.</p>
+    <a class="button" href="/catalogo40k">Abrir catalogo Warhammer 40k</a>
 
     <table>
       <thead>
