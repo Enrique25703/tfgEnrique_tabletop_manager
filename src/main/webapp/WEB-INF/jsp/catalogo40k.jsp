@@ -183,9 +183,9 @@
             <td><%= unidad.nombre() %></td>
             <td><%= unidad.puntos() %></td>
             <td><%= unidad.roles() %></td>
-            <td><%= unidad.faccionKeywords() %></td>
-            <td><%= unidad.keywords() %></td>
-            <td><%= unidad.perfil() %></td>
+            <td><%= unidad.palabrasClaveFaccion() %></td>
+            <td><%= unidad.palabrasClave() %></td>
+            <td><%= unidad.perfiles() %></td>
             <td><%= unidad.habilidades() %></td>
             <td><%= unidad.armas() %></td>
           </tr>

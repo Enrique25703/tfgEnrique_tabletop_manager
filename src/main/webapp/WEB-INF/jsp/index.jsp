@@ -1,117 +1,168 @@
-<%@ page import="java.util.List" %>
-<%@ page import="org.example.tfgenrique.entity.Usuario" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Menu principal</title>
+    <title>Login | TFG Enrique</title>
     <style>
+      :root {
+        --bg-1: #02040a;
+        --bg-2: #07111f;
+        --bg-3: #0d2a52;
+        --panel: rgba(8, 12, 20, 0.88);
+        --line: rgba(110, 168, 255, 0.22);
+        --text: #f3f7ff;
+        --muted: #9fb3cf;
+        --accent: #3d8bff;
+        --accent-2: #69b2ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: Arial, sans-serif;
-        margin: 32px;
-        background: #f5f7fa;
-        color: #1f2937;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(64, 133, 255, 0.24), transparent 35%),
+          linear-gradient(160deg, var(--bg-3) 0%, var(--bg-2) 42%, var(--bg-1) 100%);
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 420px;
+        padding: 32px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--panel);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(10px);
       }
 
       h1 {
-        margin-bottom: 8px;
+        margin: 0 0 8px;
+        font-size: 1.9rem;
+        text-align: center;
+      }
+
+      h2 {
+        margin: 26px 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
       }
 
       .subtitle {
-        margin-top: 0;
-        margin-bottom: 20px;
-        color: #4b5563;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #ffffff;
-      }
-
-      th,
-      td {
-        border: 1px solid #d1d5db;
-        padding: 10px;
-        text-align: left;
-        vertical-align: top;
-      }
-
-      th {
-        background: #111827;
-        color: #ffffff;
-      }
-
-      tr:nth-child(even) {
-        background: #f9fafb;
-      }
-
-      .empty {
+        margin: 0 0 28px;
         text-align: center;
-        color: #6b7280;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .field {
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      input {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid rgba(130, 173, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(10, 17, 30, 0.92);
+        color: var(--text);
+        font-size: 0.96rem;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(61, 139, 255, 0.16);
       }
 
       .button {
-        display: inline-block;
-        margin-bottom: 20px;
-        padding: 10px 14px;
-        background: #111827;
-        color: #ffffff;
+        width: 100%;
+        padding: 13px 16px;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+        color: #03101f;
         font-weight: 700;
-        text-decoration: none;
+        font-size: 0.96rem;
+        cursor: pointer;
+      }
+
+      .button.alt {
+        margin-top: 4px;
+        background: linear-gradient(135deg, #1f4fa0 0%, #4d88d8 100%);
+      }
+
+      .message {
+        margin: 0 0 18px;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        border-radius: 12px;
+        background: rgba(103, 25, 37, 0.32);
+        color: #ffd7df;
+        font-size: 0.92rem;
       }
     </style>
   </head>
   <body>
-    <%
-      List<Usuario> usuarios = (List<Usuario>) request.getAttribute("usuarios");
-    %>
+    <main class="login-card">
+      <h1>Acceso</h1>
+      <p class="subtitle">Inicia sesion o crea una cuenta</p>
 
-    <h1>Menu principal</h1>
-    <p class="subtitle">Listado completo de usuarios registrados en la base de datos.</p>
-    <a class="button" href="/catalogo40k">Abrir catalogo Warhammer 40k</a>
+      <%
+        String error = (String) request.getAttribute("error");
+        if (error != null) {
+      %>
+      <p class="message"><%= error %></p>
+      <%
+        }
+      %>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre de usuario</th>
-          <th>Email</th>
-          <th>Contrasena hash</th>
-          <th>Rol</th>
-          <th>Activo</th>
-          <th>Creado en</th>
-          <th>Actualizado en</th>
-        </tr>
-      </thead>
-      <tbody>
-        <%
-          if (usuarios != null && !usuarios.isEmpty()) {
-              for (Usuario usuario : usuarios) {
-        %>
-        <tr>
-          <td><%= usuario.getId() %></td>
-          <td><%= usuario.getNombreUsuario() %></td>
-          <td><%= usuario.getEmail() %></td>
-          <td><%= usuario.getContrasenaHash() %></td>
-          <td><%= usuario.getRol() %></td>
-          <td><%= usuario.getActivo() %></td>
-          <td><%= usuario.getCreadoEn() %></td>
-          <td><%= usuario.getActualizadoEn() %></td>
-        </tr>
-        <%
-              }
-          } else {
-        %>
-        <tr>
-          <td class="empty" colspan="8">No hay usuarios disponibles.</td>
-        </tr>
-        <%
-          }
-        %>
-      </tbody>
-    </table>
+      <form action="/login" method="post">
+        <div class="field">
+          <label for="usuario">Usuario o email</label>
+          <input id="usuario" name="usuario" type="text" placeholder="Introduce tu usuario" />
+        </div>
+        <div class="field">
+          <label for="password">Contrasena</label>
+          <input id="password" name="password" type="password" placeholder="Introduce tu contrasena" />
+        </div>
+        <button class="button" type="submit">Entrar</button>
+      </form>
+
+      <h2>Registro</h2>
+      <form action="/registro" method="post">
+        <div class="field">
+          <label for="nombreUsuario">Nombre de usuario</label>
+          <input id="nombreUsuario" name="nombreUsuario" type="text" placeholder="Elige un usuario" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="correo@ejemplo.com" />
+        </div>
+        <div class="field">
+          <label for="passwordRegistro">Contrasena</label>
+          <input id="passwordRegistro" name="passwordRegistro" type="password" placeholder="Crea una contrasena" />
+        </div>
+        <button class="button alt" type="submit">Registrarse</button>
+      </form>
+    </main>
   </body>
 </html>
