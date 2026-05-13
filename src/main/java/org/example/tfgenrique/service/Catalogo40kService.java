@@ -321,8 +321,10 @@ public class Catalogo40kService {
         }
 
         Set<String> perfilesUnidad = new LinkedHashSet<>();
-        Set<String> habilidades = new LinkedHashSet<>();
+        Set<String> nombresHabilidades = new LinkedHashSet<>();
         Set<String> armas = new LinkedHashSet<>();
+        List<Estadistica40k> estadisticas = new ArrayList<>();
+        List<Habilidad40k> habilidades = new ArrayList<>();
 
         // Los perfiles contienen tanto estadisticas de unidad como habilidades y armas.
         for (Element perfil : obtenerElementosDescendientes(entradaUnidad, "profile")) {
@@ -334,8 +336,12 @@ public class Catalogo40kService {
 
             if ("Unit".equalsIgnoreCase(tipoPerfil)) {
                 perfilesUnidad.add(nombrePerfil + " " + leerCaracteristicas(perfil));
+                if (estadisticas.isEmpty()) {
+                    estadisticas = leerEstadisticas(perfil);
+                }
             } else if ("Abilities".equalsIgnoreCase(tipoPerfil)) {
-                habilidades.add(nombrePerfil);
+                nombresHabilidades.add(nombrePerfil);
+                habilidades.add(new Habilidad40k(nombrePerfil, leerDescripcionPerfil(perfil)));
             } else if (tipoPerfil != null && tipoPerfil.toLowerCase(Locale.ROOT).contains("weapons")) {
                 armas.add(nombrePerfil);
             }
@@ -349,8 +355,10 @@ public class Catalogo40kService {
                 unirValoresLimitados(palabrasClaveFaccion, 12),
                 unirValoresLimitados(palabrasClave, 12),
                 unirValoresLimitados(perfilesUnidad, 4),
-                unirValoresLimitados(habilidades, 8),
-                unirValoresLimitados(armas, 10)
+                unirValoresLimitados(nombresHabilidades, 8),
+                unirValoresLimitados(armas, 10),
+                estadisticas,
+                habilidades
         );
     }
 
@@ -373,6 +381,37 @@ public class Catalogo40kService {
         List<String> partes = new ArrayList<>();
         valores.forEach((clave, valor) -> partes.add(clave + ": " + valor));
         return "(" + String.join(", ", partes) + ")";
+    }
+
+    private List<Estadistica40k> leerEstadisticas(Element perfil) {
+        List<Estadistica40k> estadisticas = new ArrayList<>();
+        for (Element caracteristica : obtenerElementosDescendientes(perfil, "characteristic")) {
+            String nombre = caracteristica.getAttribute("name");
+            String valor = caracteristica.getTextContent();
+            if (nombre != null && !nombre.isBlank() && valor != null && !valor.isBlank()) {
+                estadisticas.add(new Estadistica40k(nombre.trim(), valor.trim()));
+            }
+        }
+        return estadisticas;
+    }
+
+    private String leerDescripcionPerfil(Element perfil) {
+        List<String> partes = new ArrayList<>();
+        for (Element caracteristica : obtenerElementosDescendientes(perfil, "characteristic")) {
+            String nombre = caracteristica.getAttribute("name");
+            String valor = caracteristica.getTextContent();
+            if (valor == null || valor.isBlank()) {
+                continue;
+            }
+
+            String texto = valor.trim();
+            if (nombre != null && !nombre.isBlank() && !"Ability".equalsIgnoreCase(nombre.trim())) {
+                partes.add(nombre.trim() + ": " + texto);
+            } else {
+                partes.add(texto);
+            }
+        }
+        return String.join(" ", partes);
     }
 
     private List<Element> obtenerElementosDescendientes(Element padre, String nombreLocal) {
@@ -447,6 +486,18 @@ public class Catalogo40kService {
             Map<String, Ejercito40k> ejercitos = facciones.get(faccion);
             return ejercitos == null ? null : ejercitos.get(ejercito);
         }
+
+        public Unidad40k buscarUnidad(String faccion, String ejercito, String nombreUnidad) {
+            Ejercito40k ejercitoEncontrado = buscarEjercito(faccion, ejercito);
+            if (ejercitoEncontrado == null || nombreUnidad == null) {
+                return null;
+            }
+
+            return ejercitoEncontrado.unidades().stream()
+                    .filter(unidad -> nombreUnidad.equals(unidad.nombre()))
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 
     public record Ejercito40k(String faccion, String nombre, List<Unidad40k> unidades) {
@@ -473,7 +524,15 @@ public class Catalogo40kService {
             String palabrasClave,
             String perfiles,
             String habilidades,
-            String armas
+            String armas,
+            List<Estadistica40k> estadisticas,
+            List<Habilidad40k> habilidadesDetalle
     ) {
+    }
+
+    public record Estadistica40k(String nombre, String valor) {
+    }
+
+    public record Habilidad40k(String nombre, String descripcion) {
     }
 }

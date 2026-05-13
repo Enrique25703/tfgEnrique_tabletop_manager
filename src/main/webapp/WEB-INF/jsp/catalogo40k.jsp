@@ -1,4 +1,5 @@
 <%@ page import="java.util.Map" %>
+<%@ page import="java.net.URLEncoder" %>
 <%@ page import="org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData" %>
 <%@ page import="org.example.tfgenrique.service.Catalogo40kService.Ejercito40k" %>
 <%@ page import="org.example.tfgenrique.service.Catalogo40kService.Unidad40k" %>
@@ -125,7 +126,7 @@
         <h1>Catalogo Warhammer 40k</h1>
         <p class="muted">Datos actualizados desde BSData wh40k-10e al abrir la pagina.</p>
       </div>
-      <a class="link" href="/">Volver al menu</a>
+      <a class="link" href="/menuPrincipal">Volver al menu</a>
     </div>
 
     <% if (errorCatalogo != null) { %>
@@ -168,26 +169,16 @@
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Puntos</th>
-            <th>Roles</th>
-            <th>Faction keywords</th>
-            <th>Keywords</th>
-            <th>Perfil</th>
-            <th>Habilidades</th>
-            <th>Armas</th>
           </tr>
         </thead>
         <tbody>
           <% for (Unidad40k unidad : ejercito.unidades()) { %>
           <tr>
-            <td><%= unidad.nombre() %></td>
-            <td><%= unidad.puntos() %></td>
-            <td><%= unidad.roles() %></td>
-            <td><%= unidad.palabrasClaveFaccion() %></td>
-            <td><%= unidad.palabrasClave() %></td>
-            <td><%= unidad.perfiles() %></td>
-            <td><%= unidad.habilidades() %></td>
-            <td><%= unidad.armas() %></td>
+            <td>
+              <a class="link" href="/infoUnidad40k?faccion=<%= URLEncoder.encode(ejercito.faccion(), "UTF-8") %>&ejercito=<%= URLEncoder.encode(ejercito.nombre(), "UTF-8") %>&unidad=<%= URLEncoder.encode(unidad.nombre(), "UTF-8") %>">
+                <%= unidad.nombre() %>
+              </a>
+            </td>
           </tr>
           <% } %>
         </tbody>
