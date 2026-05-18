@@ -87,7 +87,7 @@
     <a href="/catalogo40k">Ver catalogo de 40k</a>
     <button type="button" disabled>Age of Sigmar</button>
     <button type="button" disabled>Ver comunidades</button>
-    <button type="button">Ver mis listas</button>
+    <a href="/mis-listas-40k">Ver mis listas</a>
     <button type="button" onclick="abrirPopup()">Creador de ejercitos</button>
 
     <%-- Este popup lo he dejado simple a proposito para enseñar el flujo sin liar mas pantallas. --%>
@@ -99,6 +99,7 @@
 
       <%-- Si entra en 40k aqui le pido los datos basicos para crear la lista de prueba. --%>
       <form id="form40k" class="linea" action="/creador-listas-40k" method="get" style="display:none;">
+        <input type="hidden" name="formatoJuego" value="WH40K_10" />
         <div class="linea">
           <label for="faccion">Faccion</label><br />
           <select id="faccion" name="faccion" onchange="actualizarEjercitos()">

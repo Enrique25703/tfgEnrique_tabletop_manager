@@ -9,7 +9,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Info unidad 40k</title>
-    
+    <style>
+      body {
+        margin: 20px;
+        font-family: Arial, sans-serif;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 12px;
+      }
+
+      th, td {
+        border: 1px solid #888888;
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #efefef;
+      }
+
+      .tabla-perfil th {
+        width: 180px;
+      }
+
+      .texto-bloque {
+        white-space: pre-line;
+      }
+    </style>
   </head>
   <body>
     <%
@@ -18,23 +48,35 @@
       String ejercitoSeleccionado = (String) request.getAttribute("ejercitoSeleccionado");
       List<Estadistica40k> estadisticas = unidad != null ? unidad.estadisticas() : List.of();
       List<Habilidad40k> habilidades = unidad != null ? unidad.habilidadesDetalle() : List.of();
+      String perfiles = unidad != null && unidad.perfiles() != null && !unidad.perfiles().isBlank() ? unidad.perfiles() : "Sin equipamiento registrado";
+      String armas = unidad != null && unidad.armas() != null && !unidad.armas().isBlank() ? unidad.armas() : "Sin armas registradas";
     %>
 
     <a class="link" href="/catalogo40k?faccion=<%= faccionSeleccionada %>&ejercito=<%= ejercitoSeleccionado %>">Volver al catalogo</a>
 
     <% if (unidad != null) { %>
       <h1><%= unidad.nombre() %></h1>
-      <h1>ESTO DEBE DE SER UN POPUP AL FINAL</h1>
       <p class="muted"><%= faccionSeleccionada %> - <%= ejercitoSeleccionado %></p>
 
-      <div class="stats-grid">
-        <% for (Estadistica40k estadistica : estadisticas) { %>
-          <div class="stat-box">
-            <strong><%= estadistica.nombre() %></strong>
-            <span><%= estadistica.valor() %></span>
-          </div>
-        <% } %>
-      </div>
+      <h2>Perfil de la unidad</h2>
+      <table class="tabla-perfil">
+        <tbody>
+          <% for (Estadistica40k estadistica : estadisticas) { %>
+            <tr>
+              <th><%= estadistica.nombre() %></th>
+              <td><%= estadistica.valor() %></td>
+            </tr>
+          <% } %>
+          <tr>
+            <th>Equipamiento</th>
+            <td class="texto-bloque"><%= perfiles %></td>
+          </tr>
+          <tr>
+            <th>Armas</th>
+            <td class="texto-bloque"><%= armas %></td>
+          </tr>
+        </tbody>
+      </table>
 
       <h2 class="section-title">Habilidades</h2>
       <table>
