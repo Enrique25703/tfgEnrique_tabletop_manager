@@ -81,6 +81,8 @@ public class Catalogo40kService {
 
             // Primer indice: id de unidad raiz -> nodo XML de esa unidad.
             Map<String, Element> unidadesRaizPorId = new HashMap<>();
+            Map<String, Element> selectionEntriesPorId = new HashMap<>();
+            Map<String, Element> selectionEntryGroupsPorId = new HashMap<>();
 
             // Segundo indice: id de catalogo -> archivoCatalogo.
             // Hace falta para resolver imports entre catalogos.
@@ -90,11 +92,19 @@ public class Catalogo40kService {
                 for (Element unidadRaiz : archivoCatalogo.unidadesRaiz()) {
                     unidadesRaizPorId.put(unidadRaiz.getAttribute("id"), unidadRaiz);
                 }
+                selectionEntriesPorId.putAll(archivoCatalogo.selectionEntriesPorId());
+                selectionEntryGroupsPorId.putAll(archivoCatalogo.selectionEntryGroupsPorId());
             }
 
             // Una vez indexado todo, se compone cada ejercito resolviendo sus imports y enlaces.
             for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
-                Ejercito40k ejercito = crearEjercito(archivoCatalogo, unidadesRaizPorId, archivosCatalogoPorId);
+                Ejercito40k ejercito = crearEjercito(
+                        archivoCatalogo,
+                        unidadesRaizPorId,
+                        archivosCatalogoPorId,
+                        selectionEntriesPorId,
+                        selectionEntryGroupsPorId
+                );
                 if (ejercito != null) {
                     catalogoPorFaccion
                             .computeIfAbsent(ejercito.faccion(), clave -> new TreeMap<>())
@@ -113,6 +123,108 @@ public class Catalogo40kService {
     public Catalogo40kData getData() {
         // Devuelve el ultimo catalogo cargado, aunque la descarga mas reciente haya fallado.
         return datos;
+    }
+
+    public MenuPrincipalView prepararMenuPrincipal(
+            String nombreUsuario,
+            Catalogo40kData catalogo,
+            String errorCatalogo
+    ) {
+        List<FaccionMenuView> facciones = new ArrayList<>();
+        Map<String, Map<String, Ejercito40k>> faccionesCatalogo = catalogo == null ? Map.of() : catalogo.facciones();
+        for (Map.Entry<String, Map<String, Ejercito40k>> entrada : faccionesCatalogo.entrySet()) {
+            facciones.add(new FaccionMenuView(
+                    valorSeguro(entrada.getKey()),
+                    new ArrayList<>(entrada.getValue().keySet())
+            ));
+        }
+
+        return new MenuPrincipalView(valorSeguro(nombreUsuario), valorSeguro(errorCatalogo), List.copyOf(facciones));
+    }
+
+    public Catalogo40kPaginaView prepararPaginaCatalogo(
+            Catalogo40kData catalogo,
+            String faccionSeleccionada,
+            String ejercitoSeleccionado,
+            String errorCatalogo
+    ) {
+        Map<String, Map<String, Ejercito40k>> faccionesCatalogo = catalogo == null ? Map.of() : catalogo.facciones();
+        List<FaccionCatalogoView> facciones = new ArrayList<>();
+        List<EjercitoOpcionView> ejercitosDisponibles = new ArrayList<>();
+
+        for (Map.Entry<String, Map<String, Ejercito40k>> entradaFaccion : faccionesCatalogo.entrySet()) {
+            String nombreFaccion = valorSeguro(entradaFaccion.getKey());
+            facciones.add(new FaccionCatalogoView(nombreFaccion));
+
+            if (nombreFaccion.equals(valorSeguro(faccionSeleccionada))) {
+                for (String nombreEjercito : entradaFaccion.getValue().keySet()) {
+                    ejercitosDisponibles.add(new EjercitoOpcionView(valorSeguro(nombreEjercito)));
+                }
+            }
+        }
+
+        Ejercito40k ejercito = catalogo == null ? null : catalogo.buscarEjercito(faccionSeleccionada, ejercitoSeleccionado);
+        EjercitoCatalogoDetalleView detalle = null;
+        if (ejercito != null) {
+            List<UnidadCatalogoResumenView> unidades = new ArrayList<>();
+            for (Unidad40k unidad : ejercito.unidades()) {
+                unidades.add(new UnidadCatalogoResumenView(valorSeguro(unidad.nombre())));
+            }
+            detalle = new EjercitoCatalogoDetalleView(
+                    valorSeguro(ejercito.faccion()),
+                    valorSeguro(ejercito.nombre()),
+                    unidades.size(),
+                    List.copyOf(unidades)
+            );
+        }
+
+        return new Catalogo40kPaginaView(
+                valorSeguro(errorCatalogo),
+                valorSeguro(faccionSeleccionada),
+                valorSeguro(ejercitoSeleccionado),
+                List.copyOf(facciones),
+                List.copyOf(ejercitosDisponibles),
+                detalle
+        );
+    }
+
+    public InfoUnidad40kView prepararInfoUnidad(
+            String faccionSeleccionada,
+            String ejercitoSeleccionado,
+            Unidad40k unidad
+    ) {
+        if (unidad == null) {
+            return null;
+        }
+
+        List<EstadisticaUnidadView> estadisticas = new ArrayList<>();
+        for (Estadistica40k estadistica : unidad.estadisticas()) {
+            estadisticas.add(new EstadisticaUnidadView(
+                    valorSeguro(estadistica.nombre()),
+                    valorSeguro(estadistica.valor())
+            ));
+        }
+
+        List<HabilidadUnidadView> habilidades = new ArrayList<>();
+        for (Habilidad40k habilidad : unidad.habilidadesDetalle()) {
+            habilidades.add(new HabilidadUnidadView(
+                    valorSeguro(habilidad.nombre()),
+                    valorSeguroONulo(habilidad.descripcion()).isBlank() ? "Sin descripcion" : habilidad.descripcion().trim()
+            ));
+        }
+
+        String perfiles = valorSeguroONulo(unidad.perfiles()).isBlank() ? "Sin equipamiento registrado" : unidad.perfiles().trim();
+        String armas = valorSeguroONulo(unidad.armas()).isBlank() ? "Sin armas registradas" : unidad.armas().trim();
+
+        return new InfoUnidad40kView(
+                valorSeguro(faccionSeleccionada),
+                valorSeguro(ejercitoSeleccionado),
+                valorSeguro(unidad.nombre()),
+                perfiles,
+                armas,
+                List.copyOf(estadisticas),
+                List.copyOf(habilidades)
+        );
     }
 
     private ArchivoCatalogo leerArchivoCatalogo(InputStream flujoEntrada) throws Exception {
@@ -145,14 +257,18 @@ public class Catalogo40kService {
                 Boolean.parseBoolean(catalogo.getAttribute("library")),
                 obtenerUnidadesRaiz(catalogo),
                 obtenerEnlacesRaiz(catalogo),
-                obtenerIdsCatalogosImportados(catalogo)
+                obtenerIdsCatalogosImportados(catalogo),
+                indexarElementosPorId(catalogo, "selectionEntry"),
+                indexarElementosPorId(catalogo, "selectionEntryGroup")
         );
     }
 
     private Ejercito40k crearEjercito(
             ArchivoCatalogo archivoCatalogo,
             Map<String, Element> unidadesRaizPorId,
-            Map<String, ArchivoCatalogo> archivosCatalogoPorId
+            Map<String, ArchivoCatalogo> archivosCatalogoPorId,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
     ) {
         // Las librerias son catalogos auxiliares y no deben salir como ejercitos seleccionables.
         if (!esCatalogoSeleccionable(archivoCatalogo)) {
@@ -177,7 +293,7 @@ public class Catalogo40kService {
 
         // Una vez reunidos los nodos XML de unidad, se transforman a objetos de vista.
         List<Unidad40k> unidades = elementosUnidad.values().stream()
-                .map(this::leerUnidad)
+                .map(unidad -> leerUnidad(unidad, selectionEntriesPorId, selectionEntryGroupsPorId))
                 .sorted(Comparator.comparing(Unidad40k::nombre, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -287,17 +403,14 @@ public class Catalogo40kService {
                 .toList();
     }
 
-    private Unidad40k leerUnidad(Element entradaUnidad) {
+    private Unidad40k leerUnidad(
+            Element entradaUnidad,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
         // Una unidad puede tener varios costes repetidos o variantes.
         // Aqui se recogen los puntos positivos, sin duplicados, y ordenados.
-        List<Integer> puntos = obtenerElementosDescendientes(entradaUnidad, "cost").stream()
-                .filter(coste -> "pts".equalsIgnoreCase(coste.getAttribute("name")))
-                .map(coste -> parsearEntero(coste.getAttribute("value")))
-                .filter(Objects::nonNull)
-                .filter(valor -> valor > 0)
-                .distinct()
-                .sorted()
-                .toList();
+        List<Integer> puntos = leerPuntosUnidad(entradaUnidad);
 
         Set<String> roles = new LinkedHashSet<>();
         Set<String> palabrasClave = new LinkedHashSet<>();
@@ -325,6 +438,17 @@ public class Catalogo40kService {
         Set<String> armas = new LinkedHashSet<>();
         List<Estadistica40k> estadisticas = new ArrayList<>();
         List<Habilidad40k> habilidades = new ArrayList<>();
+        List<OpcionComposicion40k> opcionesComposicion = leerOpcionesComposicion(
+                entradaUnidad,
+                puntos,
+                selectionEntriesPorId,
+                selectionEntryGroupsPorId
+        );
+        List<GrupoMiniaturas40k> gruposMiniaturas = opcionesComposicion.isEmpty() ? leerGruposMiniaturas(
+                entradaUnidad,
+                selectionEntriesPorId,
+                selectionEntryGroupsPorId
+        ) : List.of();
 
         // Los perfiles contienen tanto estadisticas de unidad como habilidades y armas.
         for (Element perfil : obtenerElementosDescendientes(entradaUnidad, "profile")) {
@@ -358,8 +482,584 @@ public class Catalogo40kService {
                 unirValoresLimitados(nombresHabilidades, 8),
                 unirValoresLimitados(armas, 10),
                 estadisticas,
-                habilidades
+                habilidades,
+                gruposMiniaturas,
+                opcionesComposicion
         );
+    }
+
+    private List<OpcionComposicion40k> leerOpcionesComposicion(
+            Element entradaUnidad,
+            List<Integer> puntosUnidad,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        List<OpcionComposicion40k> opciones = new ArrayList<>();
+        List<Element> gruposDirectos = new ArrayList<>();
+        Element contenedorGrupos = primerHijoDirecto(entradaUnidad, "selectionEntryGroups");
+        if (contenedorGrupos != null) {
+            gruposDirectos.addAll(hijosDirectos(contenedorGrupos, "selectionEntryGroup"));
+        }
+
+        for (Element grupo : gruposDirectos) {
+            for (Element entrada : obtenerSelectionEntriesContenidas(grupo)) {
+                GrupoMiniaturas40k grupoPrincipal = leerGrupoJerarquico(
+                        entrada,
+                        entrada,
+                        selectionEntriesPorId,
+                        selectionEntryGroupsPorId,
+                        new LinkedHashSet<>()
+                );
+                if (grupoPrincipal == null) {
+                    continue;
+                }
+
+                int puntos = puntosUnidad.isEmpty() ? 0 : puntosUnidad.get(Math.min(opciones.size(), puntosUnidad.size() - 1));
+                opciones.add(new OpcionComposicion40k(
+                        valorSeguroONulo(entrada.getAttribute("id")),
+                        valorSeguroONulo(entrada.getAttribute("name")),
+                        puntos,
+                        List.of(grupoPrincipal)
+                ));
+            }
+        }
+
+        return opciones;
+    }
+
+    private List<Integer> leerPuntosUnidad(Element entradaUnidad) {
+        List<Element> costesPuntos = obtenerElementosDescendientes(entradaUnidad, "cost").stream()
+                .filter(coste -> "pts".equalsIgnoreCase(coste.getAttribute("name")))
+                .toList();
+
+        Set<String> fieldsPuntos = new LinkedHashSet<>();
+        List<Integer> puntos = new ArrayList<>();
+        for (Element coste : costesPuntos) {
+            String typeId = valorSeguroONulo(coste.getAttribute("typeId"));
+            if (!typeId.isBlank()) {
+                fieldsPuntos.add(typeId);
+            }
+            Integer valor = parsearEntero(coste.getAttribute("value"));
+            if (valor != null && valor > 0) {
+                puntos.add(valor);
+            }
+        }
+
+        Element contenedorModificadores = primerHijoDirecto(entradaUnidad, "modifiers");
+        if (contenedorModificadores != null) {
+            for (Element modificador : hijosDirectos(contenedorModificadores, "modifier")) {
+                if (!fieldsPuntos.contains(modificador.getAttribute("field"))) {
+                    continue;
+                }
+                if (!"set".equals(modificador.getAttribute("type"))) {
+                    continue;
+                }
+
+                Integer valor = parsearEntero(modificador.getAttribute("value"));
+                if (valor != null && valor > 0) {
+                    puntos.add(valor);
+                }
+            }
+        }
+
+        return puntos.stream()
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private List<GrupoMiniaturas40k> leerGruposMiniaturas(
+            Element entradaUnidad,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        List<GrupoMiniaturas40k> grupos = new ArrayList<>();
+        for (GroupNode grupo : obtenerGruposDirectos(entradaUnidad, selectionEntryGroupsPorId)) {
+            GrupoMiniaturas40k grupoMiniaturas = leerGrupoJerarquico(
+                    grupo.definicion(),
+                    grupo.origen(),
+                    selectionEntriesPorId,
+                    selectionEntryGroupsPorId,
+                    new LinkedHashSet<>()
+            );
+            if (grupoMiniaturas != null) {
+                grupos.add(grupoMiniaturas);
+            }
+        }
+
+        List<ModelNode> modelosDirectos = obtenerModelosDirectos(entradaUnidad, selectionEntriesPorId);
+        if (grupos.isEmpty() && !modelosDirectos.isEmpty()) {
+            grupos.add(crearGrupoMiniaturasSintetico(entradaUnidad, modelosDirectos, selectionEntriesPorId, selectionEntryGroupsPorId));
+        }
+
+        return grupos;
+    }
+
+    private GrupoMiniaturas40k leerGrupoJerarquico(
+            Element elemento,
+            Element origen,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId,
+            Set<String> idsVisitados
+    ) {
+        String idElemento = valorSeguroONulo(elemento.getAttribute("id"));
+        if (!idElemento.isBlank() && !idsVisitados.add("miniaturas:" + idElemento)) {
+            return null;
+        }
+
+        List<ModelNode> modelosDirectos = obtenerModelosDirectos(elemento, selectionEntriesPorId);
+        List<GrupoMiniaturas40k> subgrupos = new ArrayList<>();
+
+        for (GroupNode grupo : obtenerGruposDirectos(elemento, selectionEntryGroupsPorId)) {
+            GrupoMiniaturas40k subgrupo = leerGrupoJerarquico(
+                    grupo.definicion(),
+                    grupo.origen(),
+                    selectionEntriesPorId,
+                    selectionEntryGroupsPorId,
+                    idsVisitados
+            );
+            if (subgrupo != null) {
+                subgrupos.add(subgrupo);
+            }
+        }
+
+        for (Element entrada : obtenerSelectionEntriesContenidas(elemento)) {
+            GrupoMiniaturas40k subgrupo = leerGrupoJerarquico(
+                    entrada,
+                    entrada,
+                    selectionEntriesPorId,
+                    selectionEntryGroupsPorId,
+                    idsVisitados
+            );
+            if (subgrupo != null) {
+                subgrupos.add(subgrupo);
+            }
+        }
+
+        if (modelosDirectos.isEmpty() && subgrupos.isEmpty()) {
+            return null;
+        }
+
+        return crearGrupoMiniaturas(origen, elemento, modelosDirectos, subgrupos, selectionEntriesPorId, selectionEntryGroupsPorId);
+    }
+
+    private GrupoMiniaturas40k crearGrupoMiniaturas(
+            Element origen,
+            Element grupo,
+            List<ModelNode> modelosDirectos,
+            List<GrupoMiniaturas40k> subgrupos,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        List<ModeloUnidad40k> modelos = modelosDirectos.stream()
+                .map(modelo -> leerModeloUnidad(modelo, selectionEntriesPorId, selectionEntryGroupsPorId))
+                .toList();
+
+        int minimo = leerRestriccionNumerica(origen, "min", "parent", "unit");
+        if (minimo <= 0) {
+            minimo = leerRestriccionNumerica(grupo, "min", "parent", "unit");
+        }
+        int maximo = leerRestriccionNumerica(origen, "max", "parent", "unit");
+        if (maximo <= 0) {
+            maximo = leerRestriccionNumerica(grupo, "max", "parent", "unit");
+        }
+        if (maximo <= 0) {
+            maximo = sumarMaximosModelos(modelos) + sumarMaximosSubgrupos(subgrupos);
+        }
+        if (minimo <= 0) {
+            minimo = sumarMinimosModelos(modelos) + sumarMinimosSubgrupos(subgrupos);
+        }
+
+        return new GrupoMiniaturas40k(
+                valorSeguroONulo(origen.getAttribute("id")).isBlank()
+                        ? valorSeguroONulo(grupo.getAttribute("id"))
+                        : valorSeguroONulo(origen.getAttribute("id")),
+                valorSeguroONulo(origen.getAttribute("name")).isBlank()
+                        ? valorSeguroONulo(grupo.getAttribute("name"))
+                        : valorSeguroONulo(origen.getAttribute("name")),
+                minimo,
+                maximo,
+                modelos,
+                subgrupos
+        );
+    }
+
+    private GrupoMiniaturas40k crearGrupoMiniaturasSintetico(
+            Element entradaUnidad,
+            List<ModelNode> modelosDirectos,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        List<ModeloUnidad40k> modelos = modelosDirectos.stream()
+                .map(modelo -> leerModeloUnidad(modelo, selectionEntriesPorId, selectionEntryGroupsPorId))
+                .toList();
+
+        return new GrupoMiniaturas40k(
+                valorSeguroONulo(entradaUnidad.getAttribute("id")) + "-miniaturas",
+                "Miniaturas",
+                sumarMinimosModelos(modelos),
+                sumarMaximosModelos(modelos),
+                modelos,
+                List.of()
+        );
+    }
+
+    private int sumarMinimosSubgrupos(List<GrupoMiniaturas40k> subgrupos) {
+        int total = 0;
+        for (GrupoMiniaturas40k subgrupo : subgrupos) {
+            total += Math.max(subgrupo.minimo(), 0);
+        }
+        return total;
+    }
+
+    private int sumarMaximosSubgrupos(List<GrupoMiniaturas40k> subgrupos) {
+        int total = 0;
+        for (GrupoMiniaturas40k subgrupo : subgrupos) {
+            total += Math.max(subgrupo.maximo(), 0);
+        }
+        return total;
+    }
+
+    private int sumarMinimosModelos(List<ModeloUnidad40k> modelos) {
+        int total = 0;
+        for (ModeloUnidad40k modelo : modelos) {
+            total += Math.max(modelo.minimo(), 0);
+        }
+        return total;
+    }
+
+    private int sumarMaximosModelos(List<ModeloUnidad40k> modelos) {
+        int total = 0;
+        for (ModeloUnidad40k modelo : modelos) {
+            total += Math.max(modelo.maximo(), 0);
+        }
+        return total;
+    }
+
+    private List<ModelNode> obtenerModelosDirectos(Element padre, Map<String, Element> selectionEntriesPorId) {
+        List<ModelNode> modelos = new ArrayList<>();
+        for (String nombreContenedor : List.of("selectionEntries", "sharedSelectionEntries")) {
+            Element contenedor = primerHijoDirecto(padre, nombreContenedor);
+            if (contenedor == null) {
+                continue;
+            }
+
+            for (Element entrada : hijosDirectos(contenedor, "selectionEntry")) {
+                if ("model".equals(entrada.getAttribute("type")) && !Boolean.parseBoolean(entrada.getAttribute("hidden"))) {
+                    modelos.add(new ModelNode(entrada, entrada));
+                }
+            }
+        }
+
+        Element contenedorLinks = primerHijoDirecto(padre, "entryLinks");
+        if (contenedorLinks != null) {
+            for (Element enlace : hijosDirectos(contenedorLinks, "entryLink")) {
+                if (Boolean.parseBoolean(enlace.getAttribute("hidden"))) {
+                    continue;
+                }
+                if (!"selectionEntry".equals(enlace.getAttribute("type"))) {
+                    continue;
+                }
+
+                Element destino = selectionEntriesPorId.get(enlace.getAttribute("targetId"));
+                if (destino != null && "model".equals(destino.getAttribute("type")) && !Boolean.parseBoolean(destino.getAttribute("hidden"))) {
+                    modelos.add(new ModelNode(destino, enlace));
+                }
+            }
+        }
+        return modelos;
+    }
+
+    private ModeloUnidad40k leerModeloUnidad(
+            ModelNode modelo,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        Element entradaModelo = modelo.definicion();
+        Element origenModelo = modelo.origen();
+
+        int minimo = leerRestriccionNumerica(origenModelo, "min", "parent", "unit");
+        if (minimo <= 0) {
+            minimo = leerRestriccionNumerica(entradaModelo, "min", "parent", "unit");
+        }
+
+        int maximo = leerRestriccionNumerica(origenModelo, "max", "parent", "unit");
+        if (maximo <= 0) {
+            maximo = leerRestriccionNumerica(entradaModelo, "max", "parent", "unit");
+        }
+        if (maximo <= 0) {
+            maximo = Math.max(minimo, 1);
+        }
+
+        List<String> equipamientoFijo = new ArrayList<>(leerEquipamientoFijoDirecto(entradaModelo));
+        List<GrupoEquipamiento40k> gruposEquipamiento = new ArrayList<>();
+
+        Element contenedorGrupos = primerHijoDirecto(entradaModelo, "selectionEntryGroups");
+        if (contenedorGrupos != null) {
+            for (Element grupo : hijosDirectos(contenedorGrupos, "selectionEntryGroup")) {
+                GrupoEquipamiento40k grupoEquipamiento = leerGrupoEquipamiento(
+                        grupo,
+                        selectionEntriesPorId,
+                        selectionEntryGroupsPorId
+                );
+                if (grupoEquipamiento == null || grupoEquipamiento.opciones().isEmpty()) {
+                    continue;
+                }
+
+                if (grupoEquipamiento.opciones().size() == 1
+                        && grupoEquipamiento.minimo() == 1
+                        && grupoEquipamiento.maximo() == 1) {
+                    equipamientoFijo.add(grupoEquipamiento.opciones().get(0).nombre());
+                    continue;
+                }
+
+                gruposEquipamiento.add(grupoEquipamiento);
+            }
+        }
+
+        return new ModeloUnidad40k(
+                valorSeguroONulo(origenModelo.getAttribute("id")).isBlank()
+                        ? valorSeguroONulo(entradaModelo.getAttribute("id"))
+                        : valorSeguroONulo(origenModelo.getAttribute("id")),
+                valorSeguroONulo(origenModelo.getAttribute("name")).isBlank()
+                        ? valorSeguroONulo(entradaModelo.getAttribute("name"))
+                        : valorSeguroONulo(origenModelo.getAttribute("name")),
+                minimo,
+                maximo,
+                List.copyOf(equipamientoFijo),
+                List.copyOf(gruposEquipamiento)
+        );
+    }
+
+    private List<GroupNode> obtenerGruposDirectos(Element padre, Map<String, Element> selectionEntryGroupsPorId) {
+        List<GroupNode> grupos = new ArrayList<>();
+
+        Element contenedorGrupos = primerHijoDirecto(padre, "selectionEntryGroups");
+        if (contenedorGrupos != null) {
+            for (Element grupo : hijosDirectos(contenedorGrupos, "selectionEntryGroup")) {
+                if (!Boolean.parseBoolean(grupo.getAttribute("hidden"))) {
+                    grupos.add(new GroupNode(grupo, grupo));
+                }
+            }
+        }
+
+        Element contenedorLinks = primerHijoDirecto(padre, "entryLinks");
+        if (contenedorLinks != null) {
+            for (Element enlace : hijosDirectos(contenedorLinks, "entryLink")) {
+                if (Boolean.parseBoolean(enlace.getAttribute("hidden"))) {
+                    continue;
+                }
+                if (!"selectionEntryGroup".equals(enlace.getAttribute("type"))) {
+                    continue;
+                }
+
+                Element destino = selectionEntryGroupsPorId.get(enlace.getAttribute("targetId"));
+                if (destino != null && !Boolean.parseBoolean(destino.getAttribute("hidden"))) {
+                    grupos.add(new GroupNode(destino, enlace));
+                }
+            }
+        }
+
+        return grupos;
+    }
+
+    private List<Element> obtenerSelectionEntriesContenidas(Element padre) {
+        List<Element> entradas = new ArrayList<>();
+        for (String nombreContenedor : List.of("selectionEntries", "sharedSelectionEntries")) {
+            Element contenedor = primerHijoDirecto(padre, nombreContenedor);
+            if (contenedor == null) {
+                continue;
+            }
+
+            for (Element entrada : hijosDirectos(contenedor, "selectionEntry")) {
+                if (!Boolean.parseBoolean(entrada.getAttribute("hidden"))) {
+                    entradas.add(entrada);
+                }
+            }
+        }
+        return entradas;
+    }
+
+    private List<String> leerEquipamientoFijoDirecto(Element entrada) {
+        List<String> equipamiento = new ArrayList<>();
+
+        for (String nombreContenedor : List.of("selectionEntries", "sharedSelectionEntries", "entryLinks")) {
+            Element contenedor = primerHijoDirecto(entrada, nombreContenedor);
+            if (contenedor == null) {
+                continue;
+            }
+
+            for (Element hijo : hijosDirectos(contenedor, "selectionEntry")) {
+                if (!Boolean.parseBoolean(hijo.getAttribute("hidden"))) {
+                    String nombre = valorSeguroONulo(hijo.getAttribute("name"));
+                    if (!nombre.isBlank()) {
+                        equipamiento.add(nombre);
+                    }
+                }
+            }
+
+            for (Element enlace : hijosDirectos(contenedor, "entryLink")) {
+                if (Boolean.parseBoolean(enlace.getAttribute("hidden"))) {
+                    continue;
+                }
+                if ("selectionEntryGroup".equals(enlace.getAttribute("type"))) {
+                    continue;
+                }
+
+                String nombre = valorSeguroONulo(enlace.getAttribute("name"));
+                if (!nombre.isBlank()) {
+                    equipamiento.add(nombre);
+                }
+            }
+        }
+
+        return equipamiento.stream()
+                .filter(nombre -> nombre != null && !nombre.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private GrupoEquipamiento40k leerGrupoEquipamiento(
+            Element grupo,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
+    ) {
+        List<OpcionEquipamiento40k> opciones = new ArrayList<>();
+        recopilarOpcionesEquipamiento(grupo, opciones, selectionEntriesPorId, selectionEntryGroupsPorId, new LinkedHashSet<>());
+        int minimo = leerRestriccionNumerica(grupo, "min", "parent", "unit");
+        int maximo = leerRestriccionNumerica(grupo, "max", "parent", "unit");
+        if (maximo <= 0) {
+            maximo = opciones.size() <= 1 ? 1 : opciones.size();
+        }
+
+        opciones = opciones.stream()
+                .filter(opcion -> opcion.nombre() != null && !opcion.nombre().isBlank())
+                .distinct()
+                .toList();
+
+        return new GrupoEquipamiento40k(
+                valorSeguroONulo(grupo.getAttribute("id")),
+                valorSeguroONulo(grupo.getAttribute("name")),
+                minimo,
+                maximo,
+                List.copyOf(opciones)
+        );
+    }
+
+    private void recopilarOpcionesEquipamiento(
+            Element grupo,
+            List<OpcionEquipamiento40k> opciones,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId,
+            Set<String> idsVisitados
+    ) {
+        String idGrupo = valorSeguroONulo(grupo.getAttribute("id"));
+        if (!idGrupo.isBlank() && !idsVisitados.add("grupo:" + idGrupo)) {
+            return;
+        }
+
+        for (String nombreContenedor : List.of("selectionEntries", "sharedSelectionEntries", "entryLinks")) {
+            Element contenedor = primerHijoDirecto(grupo, nombreContenedor);
+            if (contenedor == null) {
+                continue;
+            }
+
+            for (Element entrada : hijosDirectos(contenedor, "selectionEntry")) {
+                if (Boolean.parseBoolean(entrada.getAttribute("hidden"))) {
+                    continue;
+                }
+                String nombre = valorSeguroONulo(entrada.getAttribute("name"));
+                if (!nombre.isBlank()) {
+                    opciones.add(new OpcionEquipamiento40k(
+                            valorSeguroONulo(entrada.getAttribute("id")),
+                            nombre
+                    ));
+                }
+            }
+
+            for (Element enlace : hijosDirectos(contenedor, "entryLink")) {
+                if (Boolean.parseBoolean(enlace.getAttribute("hidden"))) {
+                    continue;
+                }
+                if ("selectionEntryGroup".equals(enlace.getAttribute("type"))) {
+                    Element grupoResuelto = selectionEntryGroupsPorId.get(enlace.getAttribute("targetId"));
+                    String nombreGrupo = valorSeguroONulo(enlace.getAttribute("name"));
+                    if (grupoResuelto != null && !debeIgnorarGrupoAnidado(nombreGrupo)) {
+                        recopilarOpcionesEquipamiento(
+                                grupoResuelto,
+                                opciones,
+                                selectionEntriesPorId,
+                                selectionEntryGroupsPorId,
+                                idsVisitados
+                        );
+                    }
+                    continue;
+                }
+
+                String nombre = valorSeguroONulo(enlace.getAttribute("name"));
+                if (!nombre.isBlank()) {
+                    opciones.add(new OpcionEquipamiento40k(
+                            valorSeguroONulo(enlace.getAttribute("id")),
+                            nombre
+                    ));
+                }
+            }
+        }
+    }
+
+    private boolean debeIgnorarGrupoAnidado(String nombreGrupo) {
+        String texto = valorSeguroONulo(nombreGrupo).toLowerCase(Locale.ROOT);
+        return texto.contains("weapon modifications")
+                || texto.contains("weapon upgrades")
+                || texto.contains("crusade")
+                || texto.contains("battle traits")
+                || texto.contains("battle scars")
+                || texto.contains("enhancements");
+    }
+
+    private Map<String, Element> indexarElementosPorId(Element catalogo, String nombreLocal) {
+        Map<String, Element> elementosPorId = new HashMap<>();
+        for (Element elemento : obtenerElementosDescendientes(catalogo, nombreLocal)) {
+            String id = elemento.getAttribute("id");
+            if (id != null && !id.isBlank()) {
+                elementosPorId.put(id, elemento);
+            }
+        }
+        return elementosPorId;
+    }
+
+    private int leerRestriccionNumerica(Element entrada, String tipo, String... scopesValidos) {
+        Element contenedor = primerHijoDirecto(entrada, "constraints");
+        if (contenedor == null) {
+            return 0;
+        }
+
+        for (Element restriccion : hijosDirectos(contenedor, "constraint")) {
+            if (!tipo.equals(restriccion.getAttribute("type"))) {
+                continue;
+            }
+            if (!"selections".equals(restriccion.getAttribute("field"))) {
+                continue;
+            }
+
+            String scope = restriccion.getAttribute("scope");
+            boolean scopeValido = false;
+            for (String scopeEsperado : scopesValidos) {
+                if (scopeEsperado.equals(scope)) {
+                    scopeValido = true;
+                    break;
+                }
+            }
+            if (!scopeValido) {
+                continue;
+            }
+
+            Integer valor = parsearEntero(restriccion.getAttribute("value"));
+            if (valor != null) {
+                return valor;
+            }
+        }
+        return 0;
     }
 
     private String leerCaracteristicas(Element perfil) {
@@ -476,6 +1176,14 @@ public class Catalogo40kService {
         return String.join(", ", lista);
     }
 
+    private String valorSeguro(String texto) {
+        return texto == null ? "" : texto.trim();
+    }
+
+    private String valorSeguroONulo(String texto) {
+        return texto == null ? "" : texto;
+    }
+
     public record Catalogo40kData(Map<String, Map<String, Ejercito40k>> facciones, LocalDateTime actualizadoEn) {
         public Ejercito40k buscarEjercito(String faccion, String ejercito) {
             // Acceso seguro para la vista: si falta algo, devuelve null en vez de fallar.
@@ -503,6 +1211,63 @@ public class Catalogo40kService {
     public record Ejercito40k(String faccion, String nombre, List<Unidad40k> unidades) {
     }
 
+    public record MenuPrincipalView(
+            String nombreUsuario,
+            String errorCatalogo,
+            List<FaccionMenuView> facciones
+    ) {
+    }
+
+    public record FaccionMenuView(
+            String nombre,
+            List<String> ejercitos
+    ) {
+    }
+
+    public record Catalogo40kPaginaView(
+            String errorCatalogo,
+            String faccionSeleccionada,
+            String ejercitoSeleccionado,
+            List<FaccionCatalogoView> facciones,
+            List<EjercitoOpcionView> ejercitosDisponibles,
+            EjercitoCatalogoDetalleView ejercito
+    ) {
+    }
+
+    public record FaccionCatalogoView(String nombre) {
+    }
+
+    public record EjercitoOpcionView(String nombre) {
+    }
+
+    public record EjercitoCatalogoDetalleView(
+            String faccion,
+            String nombre,
+            int totalUnidades,
+            List<UnidadCatalogoResumenView> unidades
+    ) {
+    }
+
+    public record UnidadCatalogoResumenView(String nombre) {
+    }
+
+    public record InfoUnidad40kView(
+            String faccionSeleccionada,
+            String ejercitoSeleccionado,
+            String nombreUnidad,
+            String perfiles,
+            String armas,
+            List<EstadisticaUnidadView> estadisticas,
+            List<HabilidadUnidadView> habilidades
+    ) {
+    }
+
+    public record EstadisticaUnidadView(String nombre, String valor) {
+    }
+
+    public record HabilidadUnidadView(String nombre, String descripcion) {
+    }
+
     private record ArchivoCatalogo(
             String id,
             String nombre,
@@ -512,7 +1277,9 @@ public class Catalogo40kService {
             // Referencias a unidades raiz definidas fuera del catalogo actual.
             List<Element> enlacesRaiz,
             // ids de otros catalogos cuyos root entries deben incorporarse.
-            List<String> idsCatalogosImportados
+            List<String> idsCatalogosImportados,
+            Map<String, Element> selectionEntriesPorId,
+            Map<String, Element> selectionEntryGroupsPorId
     ) {
     }
 
@@ -526,7 +1293,64 @@ public class Catalogo40kService {
             String habilidades,
             String armas,
             List<Estadistica40k> estadisticas,
-            List<Habilidad40k> habilidadesDetalle
+            List<Habilidad40k> habilidadesDetalle,
+            List<GrupoMiniaturas40k> gruposMiniaturas,
+            List<OpcionComposicion40k> opcionesComposicion
+    ) {
+    }
+
+    public record OpcionComposicion40k(
+            String id,
+            String nombre,
+            int puntos,
+            List<GrupoMiniaturas40k> gruposMiniaturas
+    ) {
+    }
+
+    public record GrupoMiniaturas40k(
+            String id,
+            String nombre,
+            int minimo,
+            int maximo,
+            List<ModeloUnidad40k> modelos,
+            List<GrupoMiniaturas40k> subgrupos
+    ) {
+    }
+
+    public record ModeloUnidad40k(
+            String id,
+            String nombre,
+            int minimo,
+            int maximo,
+            List<String> equipamientoFijo,
+            List<GrupoEquipamiento40k> gruposEquipamiento
+    ) {
+    }
+
+    public record GrupoEquipamiento40k(
+            String id,
+            String nombre,
+            int minimo,
+            int maximo,
+            List<OpcionEquipamiento40k> opciones
+    ) {
+    }
+
+    public record OpcionEquipamiento40k(
+            String id,
+            String nombre
+    ) {
+    }
+
+    private record ModelNode(
+            Element definicion,
+            Element origen
+    ) {
+    }
+
+    private record GroupNode(
+            Element definicion,
+            Element origen
     ) {
     }
 

@@ -1,7 +1,5 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Ejercito40k" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -71,107 +69,67 @@
     </style>
   </head>
   <body>
-    <%
-      Catalogo40kData catalogo40k = (Catalogo40kData) request.getAttribute("catalogo40k");
-      Map<String, Map<String, Ejercito40k>> facciones = catalogo40k != null ? catalogo40k.facciones() : Map.of();
-      String errorCatalogo = (String) request.getAttribute("errorCatalogo");
-    %>
+    <div id="menuPrincipalApp">
+      <h1>Menu principal</h1>
+      <p>Bienvenido, <c:out value="${menuPrincipal.nombreUsuario}" /></p>
+      <p>Esta pantalla aun esta a medio hacer.</p>
+      <c:if test="${not empty menuPrincipal.errorCatalogo}">
+        <p><c:out value="${menuPrincipal.errorCatalogo}" /></p>
+      </c:if>
 
-    <h1>Menu principal</h1>
-    <p>Bienvenido, <%= request.getAttribute("nombreUsuario") %></p>
-    <p>Esta pantalla aun esta a medio hacer.</p>
-    <% if (errorCatalogo != null) { %>
-      <p><%= errorCatalogo %></p>
-    <% } %>
+      <a href="/catalogo40k">Ver catalogo de 40k</a>
+      <button type="button" disabled>Age of Sigmar</button>
+      <button type="button" disabled>Ver comunidades</button>
+      <a href="/mis-listas-40k">Ver mis listas</a>
+      <button type="button" id="abrirPopupCreador">Creador de ejercitos</button>
 
-    <a href="/catalogo40k">Ver catalogo de 40k</a>
-    <button type="button" disabled>Age of Sigmar</button>
-    <button type="button" disabled>Ver comunidades</button>
-    <a href="/mis-listas-40k">Ver mis listas</a>
-    <button type="button" onclick="abrirPopup()">Creador de ejercitos</button>
+      <div id="popupCreador" class="popup">
+        <p>Elige el juego</p>
+        <button type="button" id="mostrarFormulario40k">Warhammer 40.000 10º edicion</button>
+        <button type="button" id="mostrarErrorAos">Age of Sigmar 4º edicion</button>
+        <button type="button" id="cerrarPopupCreador">Cerrar</button>
 
-    <%-- Este popup lo he dejado simple a proposito para enseñar el flujo sin liar mas pantallas. --%>
-    <div id="popupCreador" class="popup">
-      <p>Elige el juego</p>
-      <button type="button" onclick="mostrarFormulario40k()">Warhammer 40.000 10º edicion</button>
-      <button type="button" onclick="errorAos()">Age of Sigmar 4º edicion</button>
-      <button type="button" onclick="cerrarPopup()">Cerrar</button>
+        <form id="form40k" class="linea" action="/creador-listas-40k" method="get" style="display:none;">
+          <input type="hidden" name="formatoJuego" value="WH40K_10" />
+          <div class="linea">
+            <label for="faccion">Faccion</label><br />
+            <select id="faccion" name="faccion">
+              <option value="">Selecciona una faccion</option>
+              <c:forEach var="faccion" items="${menuPrincipal.facciones}">
+                <option value="<c:out value='${faccion.nombre}'/>"><c:out value="${faccion.nombre}" /></option>
+              </c:forEach>
+            </select>
+          </div>
 
-      <%-- Si entra en 40k aqui le pido los datos basicos para crear la lista de prueba. --%>
-      <form id="form40k" class="linea" action="/creador-listas-40k" method="get" style="display:none;">
-        <input type="hidden" name="formatoJuego" value="WH40K_10" />
-        <div class="linea">
-          <label for="faccion">Faccion</label><br />
-          <select id="faccion" name="faccion" onchange="actualizarEjercitos()">
-            <option value="">Selecciona una faccion</option>
-            <% for (String faccion : facciones.keySet()) { %>
-              <option value="<%= faccion %>"><%= faccion %></option>
-            <% } %>
-          </select>
-        </div>
+          <div class="linea">
+            <label for="ejercito">Ejercito</label><br />
+            <select id="ejercito" name="ejercito">
+              <option value="">Selecciona un ejercito</option>
+            </select>
+          </div>
 
-        <div class="linea">
-          <label for="ejercito">Ejercito</label><br />
-          <select id="ejercito" name="ejercito">
-            <option value="">Selecciona un ejercito</option>
-          </select>
-        </div>
+          <div class="linea">
+            <label for="nombreLista">Nombre de la lista</label><br />
+            <input id="nombreLista" name="nombreLista" type="text" />
+          </div>
 
-        <div class="linea">
-          <label for="nombreLista">Nombre de la lista</label><br />
-          <input id="nombreLista" name="nombreLista" type="text" />
-        </div>
+          <div class="linea">
+            <button type="submit">Crear</button>
+          </div>
+        </form>
 
-        <div class="linea">
-          <button type="submit">Crear</button>
-        </div>
-      </form>
+        <select id="ejercitosPlantilla" hidden>
+          <c:forEach var="faccion" items="${menuPrincipal.facciones}">
+            <c:forEach var="ejercito" items="${faccion.ejercitos}">
+              <option
+                data-faccion="<c:out value='${faccion.nombre}'/>"
+                value="<c:out value='${ejercito}'/>"><c:out value="${ejercito}" /></option>
+            </c:forEach>
+          </c:forEach>
+        </select>
+      </div>
     </div>
 
-    <script>
-      // Dejo esto ya cargado en js para no hacer otra petcion solo para rellenar el select.
-      const catalogo40k = {
-        <% for (Map.Entry<String, Map<String, Ejercito40k>> entry : facciones.entrySet()) { %>
-        "<%= entry.getKey().replace("\"", "\\\"") %>": [
-          <% for (String nombreEjercito : entry.getValue().keySet()) { %>
-          "<%= nombreEjercito.replace("\"", "\\\"") %>",
-          <% } %>
-        ],
-        <% } %>
-      };
-
-      function abrirPopup() {
-        document.getElementById("popupCreador").classList.add("visible");
-      }
-
-      function cerrarPopup() {
-        document.getElementById("popupCreador").classList.remove("visible");
-      }
-
-      function mostrarFormulario40k() {
-        document.getElementById("form40k").style.display = "block";
-      }
-
-      function errorAos() {
-        // Esto falla a proposito porque AoS no lo he montado aun.
-        alert("Error al cargar Age of Sigmar 4º edicion.");
-      }
-
-      function actualizarEjercitos() {
-        const faccion = document.getElementById("faccion").value;
-        const selectEjercito = document.getElementById("ejercito");
-        const ejercitos = catalogo40k[faccion] || [];
-
-        // Cada vez que cambia la faccion rehago los ejercitos para que salgan los suyos.
-        selectEjercito.innerHTML = '<option value="">Selecciona un ejercito</option>';
-
-        for (let i = 0; i < ejercitos.length; i++) {
-          const option = document.createElement("option");
-          option.value = ejercitos[i];
-          option.textContent = ejercitos[i];
-          selectEjercito.appendChild(option);
-        }
-      }
-    </script>
+    <script src="/js/menu-principal.js"></script>
   </body>
 </html>

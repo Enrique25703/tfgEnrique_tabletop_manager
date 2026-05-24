@@ -2,6 +2,8 @@ package org.example.tfgenrique.controller;
 
 import org.example.tfgenrique.service.Catalogo40kService;
 import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData;
+import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kPaginaView;
+import org.example.tfgenrique.service.Catalogo40kService.InfoUnidad40kView;
 import org.example.tfgenrique.service.Catalogo40kService.Unidad40k;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,20 +24,22 @@ public class Catalogo40kController {
             @RequestParam(name = "ejercito", required = false) String ejercito,
             Model model
     ) {
+        Catalogo40kData catalogo;
+        String errorCatalogo = null;
         try {
-            Catalogo40kData catalogo = catalogo40kService.actualizarCatalogo();
-            model.addAttribute("catalogo", catalogo);
-            model.addAttribute("faccionSeleccionada", faccion);
-            model.addAttribute("ejercitoSeleccionado", ejercito);
-            model.addAttribute("ejercito", catalogo.buscarEjercito(faccion, ejercito));
+            catalogo = catalogo40kService.actualizarCatalogo();
         } catch (IllegalStateException ex) {
-            Catalogo40kData catalogo = catalogo40kService.getData();
-            model.addAttribute("catalogo", catalogo);
-            model.addAttribute("faccionSeleccionada", faccion);
-            model.addAttribute("ejercitoSeleccionado", ejercito);
-            model.addAttribute("ejercito", catalogo.buscarEjercito(faccion, ejercito));
-            model.addAttribute("errorCatalogo", ex.getMessage());
+            catalogo = catalogo40kService.getData();
+            errorCatalogo = ex.getMessage();
         }
+
+        Catalogo40kPaginaView paginaCatalogo = catalogo40kService.prepararPaginaCatalogo(
+                catalogo,
+                faccion,
+                ejercito,
+                errorCatalogo
+        );
+        model.addAttribute("paginaCatalogo", paginaCatalogo);
         return "catalogo40k";
     }
 
@@ -56,9 +60,8 @@ public class Catalogo40kController {
             return "redirect:/catalogo40k?faccion=" + faccion + "&ejercito=" + ejercito;
         }
 
-        model.addAttribute("faccionSeleccionada", faccion);
-        model.addAttribute("ejercitoSeleccionado", ejercito);
-        model.addAttribute("unidad", unidadEncontrada);
+        InfoUnidad40kView infoUnidad = catalogo40kService.prepararInfoUnidad(faccion, ejercito, unidadEncontrada);
+        model.addAttribute("infoUnidad", infoUnidad);
         return "infoUnidad40k";
     }
 }

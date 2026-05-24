@@ -1,9 +1,5 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="java.net.URLEncoder" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Ejercito40k" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Unidad40k" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -111,49 +107,46 @@
     </style>
   </head>
   <body>
-    <%
-      Catalogo40kData catalogo = (Catalogo40kData) request.getAttribute("catalogo");
-      Ejercito40k ejercito = (Ejercito40k) request.getAttribute("ejercito");
-      String faccionSeleccionada = (String) request.getAttribute("faccionSeleccionada");
-      String ejercitoSeleccionado = (String) request.getAttribute("ejercitoSeleccionado");
-      String errorCatalogo = (String) request.getAttribute("errorCatalogo");
-      Map<String, Map<String, Ejercito40k>> facciones = catalogo != null ? catalogo.facciones() : Map.of();
-      Map<String, Ejercito40k> ejercitos = faccionSeleccionada != null ? facciones.get(faccionSeleccionada) : null;
-    %>
-
     <div class="topbar">
       <div>
         <h1>Catalogo Warhammer 40k</h1>
         <p class="muted">Datos actualizados desde BSData wh40k-10e al abrir la pagina.</p>
       </div>
-      <a class="link" href="/menuPrincipal">Volver al menu</a>
+      <a class="link" href="/menu-principal">Volver al menu</a>
     </div>
 
-    <% if (errorCatalogo != null) { %>
-      <div class="error"><%= errorCatalogo %>. Se muestran los ultimos datos cargados si existen.</div>
-    <% } %>
+    <c:if test="${not empty paginaCatalogo.errorCatalogo}">
+      <div class="error">
+        <c:out value="${paginaCatalogo.errorCatalogo}" />. Se muestran los ultimos datos cargados si existen.
+      </div>
+    </c:if>
 
     <div class="panel">
-      <form method="get" action="/catalogo40k">
+      <form id="filtroCatalogoForm" method="get" action="/catalogo40k">
         <div>
           <label for="faccion">Faccion</label>
-          <select id="faccion" name="faccion" onchange="this.form.submit()">
+          <select id="faccion" name="faccion">
             <option value="">Selecciona una faccion</option>
-            <% for (String faccion : facciones.keySet()) { %>
-              <option value="<%= faccion %>" <%= faccion.equals(faccionSeleccionada) ? "selected" : "" %>><%= faccion %></option>
-            <% } %>
+            <c:forEach var="faccion" items="${paginaCatalogo.facciones}">
+              <option value="<c:out value='${faccion.nombre}'/>" <c:if test="${faccion.nombre eq paginaCatalogo.faccionSeleccionada}">selected</c:if>>
+                <c:out value="${faccion.nombre}" />
+              </option>
+            </c:forEach>
           </select>
         </div>
 
         <div>
           <label for="ejercito">Ejercito</label>
-          <select id="ejercito" name="ejercito" <%= ejercitos == null ? "disabled" : "" %>>
+          <select
+            id="ejercito"
+            name="ejercito"
+            <c:if test="${empty paginaCatalogo.ejercitosDisponibles}">disabled</c:if>>
             <option value="">Selecciona un ejercito</option>
-            <% if (ejercitos != null) {
-                 for (String nombreEjercito : ejercitos.keySet()) { %>
-              <option value="<%= nombreEjercito %>" <%= nombreEjercito.equals(ejercitoSeleccionado) ? "selected" : "" %>><%= nombreEjercito %></option>
-            <%   }
-               } %>
+            <c:forEach var="ejercito" items="${paginaCatalogo.ejercitosDisponibles}">
+              <option value="<c:out value='${ejercito.nombre}'/>" <c:if test="${ejercito.nombre eq paginaCatalogo.ejercitoSeleccionado}">selected</c:if>>
+                <c:out value="${ejercito.nombre}" />
+              </option>
+            </c:forEach>
           </select>
         </div>
 
@@ -161,30 +154,44 @@
       </form>
     </div>
 
-    <% if (ejercito != null) { %>
-      <h2><%= ejercito.faccion() %> - <%= ejercito.nombre() %></h2>
-      <p class="muted"><%= ejercito.unidades().size() %> unidades encontradas.</p>
+    <c:choose>
+      <c:when test="${not empty paginaCatalogo.ejercito}">
+        <h2>
+          <c:out value="${paginaCatalogo.ejercito.faccion}" />
+          -
+          <c:out value="${paginaCatalogo.ejercito.nombre}" />
+        </h2>
+        <p class="muted"><c:out value="${paginaCatalogo.ejercito.totalUnidades}" /> unidades encontradas.</p>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% for (Unidad40k unidad : ejercito.unidades()) { %>
-          <tr>
-            <td>
-              <a class="link" href="/infoUnidad40k?faccion=<%= URLEncoder.encode(ejercito.faccion(), "UTF-8") %>&ejercito=<%= URLEncoder.encode(ejercito.nombre(), "UTF-8") %>&unidad=<%= URLEncoder.encode(unidad.nombre(), "UTF-8") %>">
-                <%= unidad.nombre() %>
-              </a>
-            </td>
-          </tr>
-          <% } %>
-        </tbody>
-      </table>
-    <% } else { %>
-      <p class="muted">Selecciona una faccion y un ejercito para ver sus unidades.</p>
-    <% } %>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            <c:forEach var="unidad" items="${paginaCatalogo.ejercito.unidades}">
+              <c:url var="detalleUnidadUrl" value="/infoUnidad40k">
+                <c:param name="faccion" value="${paginaCatalogo.ejercito.faccion}" />
+                <c:param name="ejercito" value="${paginaCatalogo.ejercito.nombre}" />
+                <c:param name="unidad" value="${unidad.nombre}" />
+              </c:url>
+              <tr>
+                <td>
+                  <a class="link" href="${detalleUnidadUrl}">
+                    <c:out value="${unidad.nombre}" />
+                  </a>
+                </td>
+              </tr>
+            </c:forEach>
+          </tbody>
+        </table>
+      </c:when>
+      <c:otherwise>
+        <p class="muted">Selecciona una faccion y un ejercito para ver sus unidades.</p>
+      </c:otherwise>
+    </c:choose>
+
+    <script src="/js/catalogo-40k.js"></script>
   </body>
 </html>

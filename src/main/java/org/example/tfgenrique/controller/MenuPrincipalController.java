@@ -4,6 +4,10 @@ import jakarta.servlet.http.HttpSession;
 import org.example.tfgenrique.service.Catalogo40kService;
 import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData;
 import org.example.tfgenrique.service.Catalogo40kService.Ejercito40k;
+import org.example.tfgenrique.service.Catalogo40kService.MenuPrincipalView;
+import org.example.tfgenrique.service.CreacionListasService.CreadorLista40kView;
+import org.example.tfgenrique.service.CreacionListasService.DetalleLista40kView;
+import org.example.tfgenrique.service.CreacionListasService.MisListas40kView;
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.CreacionListasService.GuardadoListaResultado;
 import org.example.tfgenrique.service.CreacionListasService.GuardarListaRequest;
@@ -36,17 +40,22 @@ public class MenuPrincipalController {
             return "redirect:/";
         }
 
+        String errorCatalogo = null;
         Catalogo40kData catalogo = catalogo40kService.getData();
         if (catalogo == null) {
             try {
                 catalogo = catalogo40kService.actualizarCatalogo();
             } catch (IllegalStateException ex) {
-                model.addAttribute("errorCatalogo", "No se pudo cargar el catalogo de 40k.");
+                errorCatalogo = "No se pudo cargar el catalogo de 40k.";
             }
         }
 
-        model.addAttribute("nombreUsuario", nombreUsuario);
-        model.addAttribute("catalogo40k", catalogo);
+        MenuPrincipalView menuPrincipal = catalogo40kService.prepararMenuPrincipal(
+                nombreUsuario.toString(),
+                catalogo,
+                errorCatalogo
+        );
+        model.addAttribute("menuPrincipal", menuPrincipal);
         return "menuPrincipal";
     }
 
@@ -69,14 +78,15 @@ public class MenuPrincipalController {
         }
 
         Ejercito40k ejercitoSeleccionado = catalogo.buscarEjercito(faccion, ejercito);
+        CreadorLista40kView creadorLista = creacionListasService.prepararCreadorLista40k(
+                formatoJuego,
+                faccion,
+                ejercito,
+                nombreLista,
+                ejercitoSeleccionado
+        );
 
-        // Aqui solo paso los datos basicos para arrancar el creador de listas.
-        // De moemnto no hace nada mas porque esta pensado como una prueba.
-        model.addAttribute("formatoJuego", formatoJuego);
-        model.addAttribute("faccion", faccion);
-        model.addAttribute("ejercito", ejercito);
-        model.addAttribute("nombreLista", nombreLista);
-        model.addAttribute("ejercitoData", ejercitoSeleccionado);
+        model.addAttribute("creadorLista", creadorLista);
         return "creadorListas40k";
     }
 
@@ -88,8 +98,8 @@ public class MenuPrincipalController {
         }
 
         java.util.List<ListaGuardadaView> listas = creacionListasService.obtenerListasGuardadas(nombreUsuario.toString());
-        model.addAttribute("nombreUsuario", nombreUsuario);
-        model.addAttribute("listasGuardadas", listas);
+        MisListas40kView misListas = creacionListasService.prepararMisListas40kView(nombreUsuario.toString(), listas);
+        model.addAttribute("misListas", misListas);
         return "misListas40k";
     }
 
@@ -105,8 +115,8 @@ public class MenuPrincipalController {
         }
 
         ListaGuardadaView lista = creacionListasService.obtenerListaGuardadaPorId(nombreUsuario.toString(), listaId);
-        model.addAttribute("nombreUsuario", nombreUsuario);
-        model.addAttribute("listaGuardada", lista);
+        DetalleLista40kView detalleLista = creacionListasService.prepararDetalleLista40kView(lista);
+        model.addAttribute("detalleLista", detalleLista);
         return "detalleLista40k";
     }
 

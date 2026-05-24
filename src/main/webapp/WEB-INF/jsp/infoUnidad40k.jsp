@@ -1,8 +1,5 @@
-<%@ page import="java.util.List" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Unidad40k" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Estadistica40k" %>
-<%@ page import="org.example.tfgenrique.service.Catalogo40kService.Habilidad40k" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -21,7 +18,8 @@
         margin-top: 12px;
       }
 
-      th, td {
+      th,
+      td {
         border: 1px solid #888888;
         padding: 8px 10px;
         text-align: left;
@@ -42,38 +40,37 @@
     </style>
   </head>
   <body>
-    <%
-      Unidad40k unidad = (Unidad40k) request.getAttribute("unidad");
-      String faccionSeleccionada = (String) request.getAttribute("faccionSeleccionada");
-      String ejercitoSeleccionado = (String) request.getAttribute("ejercitoSeleccionado");
-      List<Estadistica40k> estadisticas = unidad != null ? unidad.estadisticas() : List.of();
-      List<Habilidad40k> habilidades = unidad != null ? unidad.habilidadesDetalle() : List.of();
-      String perfiles = unidad != null && unidad.perfiles() != null && !unidad.perfiles().isBlank() ? unidad.perfiles() : "Sin equipamiento registrado";
-      String armas = unidad != null && unidad.armas() != null && !unidad.armas().isBlank() ? unidad.armas() : "Sin armas registradas";
-    %>
+    <c:url var="volverCatalogoUrl" value="/catalogo40k">
+      <c:param name="faccion" value="${infoUnidad.faccionSeleccionada}" />
+      <c:param name="ejercito" value="${infoUnidad.ejercitoSeleccionado}" />
+    </c:url>
 
-    <a class="link" href="/catalogo40k?faccion=<%= faccionSeleccionada %>&ejercito=<%= ejercitoSeleccionado %>">Volver al catalogo</a>
+    <a class="link" href="${volverCatalogoUrl}">Volver al catalogo</a>
 
-    <% if (unidad != null) { %>
-      <h1><%= unidad.nombre() %></h1>
-      <p class="muted"><%= faccionSeleccionada %> - <%= ejercitoSeleccionado %></p>
+    <c:if test="${not empty infoUnidad}">
+      <h1><c:out value="${infoUnidad.nombreUnidad}" /></h1>
+      <p class="muted">
+        <c:out value="${infoUnidad.faccionSeleccionada}" />
+        -
+        <c:out value="${infoUnidad.ejercitoSeleccionado}" />
+      </p>
 
       <h2>Perfil de la unidad</h2>
       <table class="tabla-perfil">
         <tbody>
-          <% for (Estadistica40k estadistica : estadisticas) { %>
+          <c:forEach var="estadistica" items="${infoUnidad.estadisticas}">
             <tr>
-              <th><%= estadistica.nombre() %></th>
-              <td><%= estadistica.valor() %></td>
+              <th><c:out value="${estadistica.nombre}" /></th>
+              <td><c:out value="${estadistica.valor}" /></td>
             </tr>
-          <% } %>
+          </c:forEach>
           <tr>
             <th>Equipamiento</th>
-            <td class="texto-bloque"><%= perfiles %></td>
+            <td class="texto-bloque"><c:out value="${infoUnidad.perfiles}" /></td>
           </tr>
           <tr>
             <th>Armas</th>
-            <td class="texto-bloque"><%= armas %></td>
+            <td class="texto-bloque"><c:out value="${infoUnidad.armas}" /></td>
           </tr>
         </tbody>
       </table>
@@ -87,14 +84,14 @@
           </tr>
         </thead>
         <tbody>
-          <% for (Habilidad40k habilidad : habilidades) { %>
+          <c:forEach var="habilidad" items="${infoUnidad.habilidades}">
             <tr>
-              <td><%= habilidad.nombre() %></td>
-              <td><%= habilidad.descripcion() == null || habilidad.descripcion().isBlank() ? "Sin descripcion" : habilidad.descripcion() %></td>
+              <td><c:out value="${habilidad.nombre}" /></td>
+              <td><c:out value="${habilidad.descripcion}" /></td>
             </tr>
-          <% } %>
+          </c:forEach>
         </tbody>
       </table>
-    <% } %>
+    </c:if>
   </body>
 </html>

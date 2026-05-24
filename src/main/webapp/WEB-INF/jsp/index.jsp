@@ -1,4 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -126,14 +127,9 @@
       <h1>Acceso</h1>
       <p class="subtitle">Inicia sesion o crea una cuenta</p>
 
-      <%
-        String error = (String) request.getAttribute("error");
-        if (error != null) {
-      %>
-      <p class="message"><%= error %></p>
-      <%
-        }
-      %>
+      <c:if test="${not empty error}">
+        <p class="message"><c:out value="${error}" /></p>
+      </c:if>
 
       <form action="/login" method="post">
         <div class="field">

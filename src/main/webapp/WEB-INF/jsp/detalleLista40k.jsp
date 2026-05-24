@@ -1,7 +1,5 @@
-<%@ page import="java.net.URLEncoder" %>
-<%@ page import="org.example.tfgenrique.service.CreacionListasService.ListaGuardadaView" %>
-<%@ page import="org.example.tfgenrique.service.CreacionListasService.UnidadGuardadaView" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -19,7 +17,8 @@
         width: 100%;
       }
 
-      th, td {
+      th,
+      td {
         border: 1px solid #888888;
         padding: 8px 10px;
         text-align: left;
@@ -31,22 +30,18 @@
     </style>
   </head>
   <body>
-    <%
-      ListaGuardadaView lista = (ListaGuardadaView) request.getAttribute("listaGuardada");
-    %>
-
     <p><a href="/mis-listas-40k">Volver a mis listas</a></p>
 
-    <% if (lista != null) { %>
-      <h1><%= lista.nombreLista() %></h1>
+    <c:if test="${not empty detalleLista}">
+      <h1><c:out value="${detalleLista.nombreLista}" /></h1>
       <p>
-        Faccion: <%= lista.faccion() %>
+        Faccion: <c:out value="${detalleLista.faccion}" />
         |
-        Ejercito: <%= lista.ejercito() %>
+        Ejercito: <c:out value="${detalleLista.ejercito}" />
         |
-        Puntos: <%= lista.puntosActuales() %> / <%= lista.limitePuntos() %>
+        Puntos: <c:out value="${detalleLista.puntos}" />
         |
-        Version: <%= lista.numeroVersion() %>
+        Version: <c:out value="${detalleLista.numeroVersion}" />
       </p>
 
       <table>
@@ -59,20 +54,25 @@
           </tr>
         </thead>
         <tbody>
-          <% for (UnidadGuardadaView unidad : lista.unidades()) { %>
+          <c:forEach var="unidad" items="${detalleLista.unidades}">
+            <c:url var="detalleUnidadUrl" value="/infoUnidad40k">
+              <c:param name="faccion" value="${detalleLista.faccion}" />
+              <c:param name="ejercito" value="${detalleLista.ejercito}" />
+              <c:param name="unidad" value="${unidad.nombreUnidad}" />
+            </c:url>
             <tr>
               <td>
-                <a href="/infoUnidad40k?faccion=<%= URLEncoder.encode(lista.faccion(), "UTF-8") %>&ejercito=<%= URLEncoder.encode(lista.ejercito(), "UTF-8") %>&unidad=<%= URLEncoder.encode(unidad.nombreUnidad(), "UTF-8") %>">
-                  <%= unidad.nombreUnidad() %>
+                <a href="${detalleUnidadUrl}">
+                  <c:out value="${unidad.nombreUnidad}" />
                 </a>
               </td>
-              <td><%= unidad.roles().isBlank() ? "Sin rol" : unidad.roles() %></td>
-              <td><%= unidad.puntosBase() %></td>
-              <td><%= unidad.categoria().isBlank() ? "Sin categoria" : unidad.categoria() %></td>
+              <td><c:out value="${unidad.roles}" /></td>
+              <td><c:out value="${unidad.puntosBase}" /></td>
+              <td><c:out value="${unidad.categoria}" /></td>
             </tr>
-          <% } %>
+          </c:forEach>
         </tbody>
       </table>
-    <% } %>
+    </c:if>
   </body>
 </html>
