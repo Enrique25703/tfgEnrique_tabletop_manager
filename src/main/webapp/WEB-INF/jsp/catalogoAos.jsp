@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Catalogo Warhammer 40k</title>
+    <title>Catalogo Age of Sigmar</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
     <style>
       .filter-panel {
@@ -55,23 +55,23 @@
           <section class="page-panel">
             <div class="page-header">
               <h2 class="page-title">Catalogos</h2>
-              <p class="page-subtitle">Consulta el contenido del repositorio de 40k actualizado desde BSData.</p>
+              <p class="page-subtitle">Consulta el contenido del repositorio de Age of Sigmar 4ª edicion actualizado desde BSData.</p>
             </div>
 
-            <c:if test="${not empty paginaCatalogo.errorCatalogo}">
+            <c:if test="${not empty paginaCatalogoAos.errorCatalogo}">
               <div class="error-box">
-                <c:out value="${paginaCatalogo.errorCatalogo}" />. Se muestran los ultimos datos cargados si existen.
+                <c:out value="${paginaCatalogoAos.errorCatalogo}" />. Se muestran los ultimos datos cargados si existen.
               </div>
             </c:if>
 
             <div class="filter-panel">
-              <form id="filtroCatalogoForm" class="filter-form" method="get" action="/catalogo40k">
+              <form id="filtroCatalogoForm" class="filter-form" method="get" action="/catalogo-aos">
                 <div>
                   <label for="faccion">Faccion</label>
                   <select id="faccion" name="faccion">
                     <option value="">Selecciona una faccion</option>
-                    <c:forEach var="faccion" items="${paginaCatalogo.facciones}">
-                      <option value="<c:out value='${faccion.nombre}'/>" <c:if test="${faccion.nombre eq paginaCatalogo.faccionSeleccionada}">selected</c:if>>
+                    <c:forEach var="faccion" items="${paginaCatalogoAos.facciones}">
+                      <option value="<c:out value='${faccion.nombre}'/>" <c:if test="${faccion.nombre eq paginaCatalogoAos.faccionSeleccionada}">selected</c:if>>
                         <c:out value="${faccion.nombre}" />
                       </option>
                     </c:forEach>
@@ -80,10 +80,10 @@
 
                 <div>
                   <label for="ejercito">Ejercito</label>
-                  <select id="ejercito" name="ejercito" <c:if test="${empty paginaCatalogo.ejercitosDisponibles}">disabled</c:if>>
+                  <select id="ejercito" name="ejercito" <c:if test="${empty paginaCatalogoAos.ejercitosDisponibles}">disabled</c:if>>
                     <option value="">Selecciona un ejercito</option>
-                    <c:forEach var="ejercito" items="${paginaCatalogo.ejercitosDisponibles}">
-                      <option value="<c:out value='${ejercito.nombre}'/>" <c:if test="${ejercito.nombre eq paginaCatalogo.ejercitoSeleccionado}">selected</c:if>>
+                    <c:forEach var="ejercito" items="${paginaCatalogoAos.ejercitosDisponibles}">
+                      <option value="<c:out value='${ejercito.nombre}'/>" <c:if test="${ejercito.nombre eq paginaCatalogoAos.ejercitoSeleccionado}">selected</c:if>>
                         <c:out value="${ejercito.nombre}" />
                       </option>
                     </c:forEach>
@@ -95,11 +95,11 @@
             </div>
 
             <c:choose>
-              <c:when test="${not empty paginaCatalogo.ejercito}">
+              <c:when test="${not empty paginaCatalogoAos.ejercito}">
                 <div class="chip-row">
-                  <span class="chip"><c:out value="${paginaCatalogo.ejercito.faccion}" /></span>
-                  <span class="chip"><c:out value="${paginaCatalogo.ejercito.nombre}" /></span>
-                  <span class="chip"><c:out value="${paginaCatalogo.ejercito.totalUnidades}" /> unidades</span>
+                  <span class="chip"><c:out value="${paginaCatalogoAos.ejercito.faccion}" /></span>
+                  <span class="chip"><c:out value="${paginaCatalogoAos.ejercito.nombre}" /></span>
+                  <span class="chip"><c:out value="${paginaCatalogoAos.ejercito.totalUnidades}" /> unidades</span>
                 </div>
 
                 <table class="data-table" style="margin-top:18px;">
@@ -109,10 +109,10 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <c:forEach var="unidad" items="${paginaCatalogo.ejercito.unidades}">
-                      <c:url var="detalleUnidadUrl" value="/infoUnidad40k">
-                        <c:param name="faccion" value="${paginaCatalogo.ejercito.faccion}" />
-                        <c:param name="ejercito" value="${paginaCatalogo.ejercito.nombre}" />
+                    <c:forEach var="unidad" items="${paginaCatalogoAos.ejercito.unidades}">
+                      <c:url var="detalleUnidadUrl" value="/infoUnidadAos">
+                        <c:param name="faccion" value="${paginaCatalogoAos.ejercito.faccion}" />
+                        <c:param name="ejercito" value="${paginaCatalogoAos.ejercito.nombre}" />
                         <c:param name="unidad" value="${unidad.nombre}" />
                       </c:url>
                       <tr>

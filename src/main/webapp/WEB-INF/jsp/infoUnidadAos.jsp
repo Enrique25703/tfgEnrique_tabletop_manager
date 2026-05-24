@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Info unidad 40k</title>
+    <title>Info unidad AoS</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
     <style>
       .two-column {
@@ -38,9 +38,9 @@
     </style>
   </head>
   <body>
-    <c:url var="volverCatalogoUrl" value="/catalogo40k">
-      <c:param name="faccion" value="${infoUnidad.faccionSeleccionada}" />
-      <c:param name="ejercito" value="${infoUnidad.ejercitoSeleccionado}" />
+    <c:url var="volverCatalogoUrl" value="/catalogo-aos">
+      <c:param name="faccion" value="${infoUnidadAos.faccionSeleccionada}" />
+      <c:param name="ejercito" value="${infoUnidadAos.ejercitoSeleccionado}" />
     </c:url>
 
     <div class="app-shell">
@@ -72,13 +72,13 @@
         <main class="page-content">
           <section class="page-panel">
             <div class="page-header">
-              <h2 class="page-title"><c:out value="${infoUnidad.nombreUnidad}" /></h2>
+              <h2 class="page-title"><c:out value="${infoUnidadAos.nombreUnidad}" /></h2>
               <p class="page-subtitle">
                 <a class="link-inline" href="${volverCatalogoUrl}">Volver al catalogo</a>
                 ·
-                <c:out value="${infoUnidad.faccionSeleccionada}" />
+                <c:out value="${infoUnidadAos.faccionSeleccionada}" />
                 -
-                <c:out value="${infoUnidad.ejercitoSeleccionado}" />
+                <c:out value="${infoUnidadAos.ejercitoSeleccionado}" />
               </p>
             </div>
 
@@ -87,7 +87,7 @@
                 <h3>Perfil de la unidad</h3>
                 <table class="data-table">
                   <tbody>
-                    <c:forEach var="estadistica" items="${infoUnidad.estadisticas}">
+                    <c:forEach var="estadistica" items="${infoUnidadAos.estadisticas}">
                       <tr>
                         <th><c:out value="${estadistica.nombre}" /></th>
                         <td><c:out value="${estadistica.valor}" /></td>
@@ -100,9 +100,9 @@
               <div class="sub-panel">
                 <h3>Equipo y armas</h3>
                 <p class="card-kicker">Equipamiento</p>
-                <p class="text-block"><c:out value="${infoUnidad.perfiles}" /></p>
+                <p class="text-block"><c:out value="${infoUnidadAos.perfiles}" /></p>
                 <p class="card-kicker" style="margin-top:18px;">Armas</p>
-                <p class="text-block"><c:out value="${infoUnidad.armas}" /></p>
+                <p class="text-block"><c:out value="${infoUnidadAos.armas}" /></p>
               </div>
             </div>
 
@@ -116,7 +116,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <c:forEach var="habilidad" items="${infoUnidad.habilidades}">
+                  <c:forEach var="habilidad" items="${infoUnidadAos.habilidades}">
                     <tr>
                       <td><c:out value="${habilidad.nombre}" /></td>
                       <td><c:out value="${habilidad.descripcion}" /></td>

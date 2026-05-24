@@ -11,6 +11,7 @@
   const faccion = app.dataset.faccion || "";
   const ejercito = app.dataset.ejercito || "";
   const limitePuntos = parseInt(app.dataset.limitePuntos || "2000", 10);
+  const urlGuardado = app.dataset.urlGuardado || "/creador-listas-40k/guardar";
 
   function parsearJsonSeguro(texto, valorPorDefecto) {
     if (!texto) {
@@ -693,7 +694,7 @@
       datosFormulario.append("revisionCatalogo", "");
       datosFormulario.append("datosListaJson", JSON.stringify(payload));
 
-      const respuesta = await fetch("/creador-listas-40k/guardar", {
+      const respuesta = await fetch(urlGuardado, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"

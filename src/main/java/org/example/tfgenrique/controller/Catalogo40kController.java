@@ -18,6 +18,11 @@ public class Catalogo40kController {
         this.catalogo40kService = catalogo40kService;
     }
 
+    @GetMapping("/catalogos")
+    public String mostrarSelectorCatalogos() {
+        return "selectorCatalogos";
+    }
+
     @GetMapping("/catalogo40k")
     public String mostrarCatalogo40k(
             @RequestParam(name = "faccion", required = false) String faccion,

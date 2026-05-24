@@ -28,12 +28,19 @@ public class CreacionListasService {
 
     private static final String VERSION_ESQUEMA_JSON = "1.0";
     private static final String FORMATO_40K = "WH40K_10";
+    private static final String FORMATO_AOS = "AOS_4";
     private static final String NOMBRE_FORMATO_40K = "Warhammer 40,000";
+    private static final String NOMBRE_FORMATO_AOS = "Age of Sigmar";
     private static final String EDICION_FORMATO_40K = "10a edicion";
+    private static final String EDICION_FORMATO_AOS = "4a edicion";
     private static final String FUENTE_CATALOGO_40K = "BSData";
+    private static final String FUENTE_CATALOGO_AOS = "BSData";
     private static final String TIPO_FUENTE_40K = "GIT";
+    private static final String TIPO_FUENTE_AOS = "GIT";
     private static final String URL_FUENTE_40K = "https://github.com/BSData/wh40k-10e";
+    private static final String URL_FUENTE_AOS = "https://github.com/BSData/age-of-sigmar-4th";
     private static final String RAMA_FUENTE_40K = "main";
+    private static final String RAMA_FUENTE_AOS = "main";
     private static final int LIMITE_PUNTOS_POR_DEFECTO = 2000;
     private static final String CATEGORIA_PERSONAJES = "personajes";
     private static final String CATEGORIA_LINEA = "linea";
@@ -192,6 +199,16 @@ public class CreacionListasService {
         return categorias;
     }
 
+    private Map<String, CategoriaCreadorListaView> crearCategoriasCreadorAos() {
+        Map<String, CategoriaCreadorListaView> categorias = new LinkedHashMap<>();
+        categorias.put(CATEGORIA_PERSONAJES, new CategoriaCreadorListaView(CATEGORIA_PERSONAJES, "Heroes", new ArrayList<>()));
+        categorias.put(CATEGORIA_LINEA, new CategoriaCreadorListaView(CATEGORIA_LINEA, "Battleline", new ArrayList<>()));
+        categorias.put(CATEGORIA_TRANSPORTE, new CategoriaCreadorListaView(CATEGORIA_TRANSPORTE, "Apoyo y maquinas", new ArrayList<>()));
+        categorias.put(CATEGORIA_PESADO, new CategoriaCreadorListaView(CATEGORIA_PESADO, "Monstruos y behemoths", new ArrayList<>()));
+        categorias.put(CATEGORIA_OTROS, new CategoriaCreadorListaView(CATEGORIA_OTROS, "Otras unidades", new ArrayList<>()));
+        return categorias;
+    }
+
     private SistemaJuego resolverSistemaJuego(String formatoJuego) {
         SistemaJuego sistemaJuego = sistemaJuegoRepository.findByCodigo(formatoJuego).orElse(null);
         if (sistemaJuego != null) {
@@ -223,12 +240,18 @@ public class CreacionListasService {
         if (FORMATO_40K.equals(formatoJuego)) {
             return NOMBRE_FORMATO_40K;
         }
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return NOMBRE_FORMATO_AOS;
+        }
         return formatoJuego;
     }
 
     private String obtenerEdicionSistema(String formatoJuego) {
         if (FORMATO_40K.equals(formatoJuego)) {
             return EDICION_FORMATO_40K;
+        }
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return EDICION_FORMATO_AOS;
         }
         return null;
     }
@@ -241,13 +264,41 @@ public class CreacionListasService {
     private FuenteCatalogo crearFuenteCatalogoPorDefecto(SistemaJuego sistemaJuego) {
         FuenteCatalogo fuenteCatalogo = new FuenteCatalogo();
         fuenteCatalogo.setSistemaJuego(sistemaJuego);
-        fuenteCatalogo.setNombreFuente(FUENTE_CATALOGO_40K);
-        fuenteCatalogo.setTipoFuente(TIPO_FUENTE_40K);
-        fuenteCatalogo.setUrlRepositorio(URL_FUENTE_40K);
-        fuenteCatalogo.setRamaPorDefecto(RAMA_FUENTE_40K);
+        fuenteCatalogo.setNombreFuente(obtenerNombreFuenteCatalogo(sistemaJuego.getCodigo()));
+        fuenteCatalogo.setTipoFuente(obtenerTipoFuenteCatalogo(sistemaJuego.getCodigo()));
+        fuenteCatalogo.setUrlRepositorio(obtenerUrlFuenteCatalogo(sistemaJuego.getCodigo()));
+        fuenteCatalogo.setRamaPorDefecto(obtenerRamaFuenteCatalogo(sistemaJuego.getCodigo()));
         fuenteCatalogo.setActivo(true);
         fuenteCatalogo.setCreadoEn(LocalDateTime.now());
         return fuenteCatalogoRepository.save(fuenteCatalogo);
+    }
+
+    private String obtenerNombreFuenteCatalogo(String formatoJuego) {
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return FUENTE_CATALOGO_AOS;
+        }
+        return FUENTE_CATALOGO_40K;
+    }
+
+    private String obtenerTipoFuenteCatalogo(String formatoJuego) {
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return TIPO_FUENTE_AOS;
+        }
+        return TIPO_FUENTE_40K;
+    }
+
+    private String obtenerUrlFuenteCatalogo(String formatoJuego) {
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return URL_FUENTE_AOS;
+        }
+        return URL_FUENTE_40K;
+    }
+
+    private String obtenerRamaFuenteCatalogo(String formatoJuego) {
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return RAMA_FUENTE_AOS;
+        }
+        return RAMA_FUENTE_40K;
     }
 
     private String calcularChecksum(String datosListaJson) {
@@ -272,6 +323,23 @@ public class CreacionListasService {
             return CATEGORIA_TRANSPORTE;
         }
         if (texto.contains("vehicle") || texto.contains("monster") || texto.contains("walker") || texto.contains("aircraft")) {
+            return CATEGORIA_PESADO;
+        }
+        return CATEGORIA_OTROS;
+    }
+
+    private String resolverCategoriaUnidadAos(String roles) {
+        String texto = normalizarTexto(roles).toLowerCase(Locale.ROOT);
+        if (texto.contains("hero") || texto.contains("wizard") || texto.contains("priest")) {
+            return CATEGORIA_PERSONAJES;
+        }
+        if (texto.contains("battleline")) {
+            return CATEGORIA_LINEA;
+        }
+        if (texto.contains("war machine") || texto.contains("artillery") || texto.contains("terrain")) {
+            return CATEGORIA_TRANSPORTE;
+        }
+        if (texto.contains("monster") || texto.contains("behemoth")) {
             return CATEGORIA_PESADO;
         }
         return CATEGORIA_OTROS;
@@ -340,6 +408,45 @@ public class CreacionListasService {
         return json.toString();
     }
 
+    private String serializarConfiguracionUnidadAos(
+            List<CatalogoAosService.GrupoMiniaturas40k> gruposMiniaturas,
+            List<CatalogoAosService.OpcionComposicion40k> opcionesComposicion
+    ) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"gruposMiniaturas\":[");
+        for (int indiceGrupo = 0; indiceGrupo < gruposMiniaturas.size(); indiceGrupo++) {
+            CatalogoAosService.GrupoMiniaturas40k grupo = gruposMiniaturas.get(indiceGrupo);
+            if (indiceGrupo > 0) {
+                json.append(',');
+            }
+            serializarGrupoMiniaturasAos(json, grupo);
+        }
+        json.append("],\"opcionesComposicion\":[");
+        for (int indiceOpcion = 0; indiceOpcion < opcionesComposicion.size(); indiceOpcion++) {
+            CatalogoAosService.OpcionComposicion40k opcion = opcionesComposicion.get(indiceOpcion);
+            if (indiceOpcion > 0) {
+                json.append(',');
+            }
+
+            json.append('{')
+                    .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
+                    .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\",")
+                    .append("\"puntos\":").append(opcion.puntos()).append(',')
+                    .append("\"gruposMiniaturas\":[");
+
+            for (int indiceGrupo = 0; indiceGrupo < opcion.gruposMiniaturas().size(); indiceGrupo++) {
+                if (indiceGrupo > 0) {
+                    json.append(',');
+                }
+                serializarGrupoMiniaturasAos(json, opcion.gruposMiniaturas().get(indiceGrupo));
+            }
+
+            json.append("]}");
+        }
+        json.append("]}");
+        return json.toString();
+    }
+
     private void serializarGrupoMiniaturas(StringBuilder json, Catalogo40kService.GrupoMiniaturas40k grupo) {
         json.append('{')
                 .append("\"id\":\"").append(escaparJson(grupo.id())).append("\",")
@@ -400,6 +507,71 @@ public class CreacionListasService {
                 json.append(',');
             }
             serializarGrupoMiniaturas(json, grupo.subgrupos().get(indiceSubgrupo));
+        }
+
+        json.append("]}");
+    }
+
+    private void serializarGrupoMiniaturasAos(StringBuilder json, CatalogoAosService.GrupoMiniaturas40k grupo) {
+        json.append('{')
+                .append("\"id\":\"").append(escaparJson(grupo.id())).append("\",")
+                .append("\"nombre\":\"").append(escaparJson(grupo.nombre())).append("\",")
+                .append("\"minimo\":").append(grupo.minimo()).append(',')
+                .append("\"maximo\":").append(grupo.maximo()).append(',')
+                .append("\"modelos\":[");
+
+        for (int indiceModelo = 0; indiceModelo < grupo.modelos().size(); indiceModelo++) {
+            CatalogoAosService.ModeloUnidad40k modelo = grupo.modelos().get(indiceModelo);
+            if (indiceModelo > 0) {
+                json.append(',');
+            }
+
+            json.append('{')
+                    .append("\"id\":\"").append(escaparJson(modelo.id())).append("\",")
+                    .append("\"nombre\":\"").append(escaparJson(modelo.nombre())).append("\",")
+                    .append("\"minimo\":").append(modelo.minimo()).append(',')
+                    .append("\"maximo\":").append(modelo.maximo()).append(',')
+                    .append("\"equipamientoFijo\":");
+            serializarListaTextos(json, modelo.equipamientoFijo());
+            json.append(",\"gruposEquipamiento\":[");
+
+            for (int indiceEquipamiento = 0; indiceEquipamiento < modelo.gruposEquipamiento().size(); indiceEquipamiento++) {
+                CatalogoAosService.GrupoEquipamiento40k grupoEquipamiento = modelo.gruposEquipamiento().get(indiceEquipamiento);
+                if (indiceEquipamiento > 0) {
+                    json.append(',');
+                }
+
+                json.append('{')
+                        .append("\"id\":\"").append(escaparJson(grupoEquipamiento.id())).append("\",")
+                        .append("\"nombre\":\"").append(escaparJson(grupoEquipamiento.nombre())).append("\",")
+                        .append("\"minimo\":").append(grupoEquipamiento.minimo()).append(',')
+                        .append("\"maximo\":").append(grupoEquipamiento.maximo()).append(',')
+                        .append("\"opciones\":[");
+
+                for (int indiceOpcion = 0; indiceOpcion < grupoEquipamiento.opciones().size(); indiceOpcion++) {
+                    CatalogoAosService.OpcionEquipamiento40k opcion = grupoEquipamiento.opciones().get(indiceOpcion);
+                    if (indiceOpcion > 0) {
+                        json.append(',');
+                    }
+                    json.append('{')
+                            .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
+                            .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\"")
+                            .append('}');
+                }
+
+                json.append("]}");
+            }
+
+            json.append("]}");
+        }
+
+        json.append("],\"subgrupos\":[");
+
+        for (int indiceSubgrupo = 0; indiceSubgrupo < grupo.subgrupos().size(); indiceSubgrupo++) {
+            if (indiceSubgrupo > 0) {
+                json.append(',');
+            }
+            serializarGrupoMiniaturasAos(json, grupo.subgrupos().get(indiceSubgrupo));
         }
 
         json.append("]}");
@@ -475,6 +647,41 @@ public class CreacionListasService {
             String habilidades,
             String configuracionJson
     ) {
+    }
+
+    @Transactional(readOnly = true)
+    public CreadorLista40kView prepararCreadorListaAos(
+            String formatoJuego,
+            String faccion,
+            String ejercito,
+            String nombreLista,
+            CatalogoAosService.Ejercito40k ejercitoData
+    ) {
+        Map<String, CategoriaCreadorListaView> categorias = crearCategoriasCreadorAos();
+        if (ejercitoData != null) {
+            for (CatalogoAosService.Unidad40k unidad : ejercitoData.unidades()) {
+                String categoria = resolverCategoriaUnidadAos(unidad.roles());
+                categorias.get(categoria).unidades().add(new UnidadCatalogoView(
+                        valorSeguroVista(unidad.nombre()),
+                        valorSeguroVista(unidad.roles()),
+                        valorSeguroVista(unidad.puntos()),
+                        obtenerPuntosMinimos(unidad.puntos()),
+                        categoria,
+                        valorSeguroVista(unidad.armas()),
+                        valorSeguroVista(unidad.habilidades()),
+                        serializarConfiguracionUnidadAos(unidad.gruposMiniaturas(), unidad.opcionesComposicion())
+                ));
+            }
+        }
+
+        return new CreadorLista40kView(
+                normalizarTexto(formatoJuego),
+                normalizarTexto(nombreLista),
+                normalizarTexto(faccion),
+                normalizarTexto(ejercito),
+                LIMITE_PUNTOS_POR_DEFECTO,
+                List.copyOf(categorias.values())
+        );
     }
 
     public MisListas40kView prepararMisListas40kView(String nombreUsuario, List<ListaGuardadaView> listasGuardadas) {

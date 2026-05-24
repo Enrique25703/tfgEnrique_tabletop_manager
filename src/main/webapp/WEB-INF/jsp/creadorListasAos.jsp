@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Creador de listas 40k</title>
+    <title>Creador de listas AoS</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
     <style>
       .builder-grid {
@@ -60,7 +60,7 @@
         </div>
         <nav class="sidebar-nav">
           <a class="sidebar-link" href="/menu-principal">Menu</a>
-          <a class="sidebar-link" href="/catalogo40k">Catalogos</a>
+          <a class="sidebar-link" href="/catalogo-aos">Catalogos</a>
           <a class="sidebar-link active" href="/mis-listas-40k">Listas</a>
           <span class="sidebar-link disabled">Partidas</span>
           <span class="sidebar-link disabled">Comunidades</span>
@@ -80,25 +80,25 @@
 
         <main class="page-content">
           <div
-      id="creadorListaApp"
-      data-formato-juego="<c:out value='${creadorLista.formatoJuego}'/>"
-      data-nombre-lista="<c:out value='${creadorLista.nombreLista}'/>"
-      data-faccion="<c:out value='${creadorLista.faccion}'/>"
-      data-ejercito="<c:out value='${creadorLista.ejercito}'/>"
-      data-limite-puntos="<c:out value='${creadorLista.limitePuntos}'/>"
-      data-url-guardado="/creador-listas-40k/guardar">
+            id="creadorListaApp"
+            data-formato-juego="<c:out value='${creadorListaAos.formatoJuego}'/>"
+            data-nombre-lista="<c:out value='${creadorListaAos.nombreLista}'/>"
+            data-faccion="<c:out value='${creadorListaAos.faccion}'/>"
+            data-ejercito="<c:out value='${creadorListaAos.ejercito}'/>"
+            data-limite-puntos="<c:out value='${creadorListaAos.limitePuntos}'/>"
+            data-url-guardado="/creador-listas-aos/guardar">
 
             <section class="page-panel">
               <div class="page-header">
                 <h2 class="page-title">
-                  <c:out value="${creadorLista.nombreLista}" />
+                  <c:out value="${creadorListaAos.nombreLista}" />
                   ·
                   <span id="contadorPuntos">0</span> pts
                 </h2>
                 <p class="page-subtitle">
-                  Formato: <span id="formatoJuegoTexto"><c:out value="${creadorLista.formatoJuego}" /></span>
-                  · Faccion: <c:out value="${creadorLista.faccion}" />
-                  · Ejercito: <c:out value="${creadorLista.ejercito}" />
+                  Formato: <span id="formatoJuegoTexto"><c:out value="${creadorListaAos.formatoJuego}" /></span>
+                  · Faccion: <c:out value="${creadorListaAos.faccion}" />
+                  · Ejercito: <c:out value="${creadorListaAos.ejercito}" />
                 </p>
               </div>
 
@@ -111,7 +111,7 @@
               <div class="builder-grid" style="margin-top:22px;">
                 <section class="builder-column">
                   <h3>Catalogo</h3>
-                  <c:forEach var="categoria" items="${creadorLista.categorias}">
+                  <c:forEach var="categoria" items="${creadorListaAos.categorias}">
                     <h4><c:out value="${categoria.titulo}" /></h4>
                     <div id="catalogo-${categoria.id}">
                       <c:forEach var="unidad" items="${categoria.unidades}">
@@ -133,7 +133,7 @@
 
                 <section class="builder-column">
                   <h3>Lista</h3>
-                  <c:forEach var="categoria" items="${creadorLista.categorias}">
+                  <c:forEach var="categoria" items="${creadorListaAos.categorias}">
                     <h4><c:out value="${categoria.titulo}" /></h4>
                     <div id="bloque-${categoria.id}">Vacio</div>
                   </c:forEach>

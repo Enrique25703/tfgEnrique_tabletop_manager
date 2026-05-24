@@ -1,6 +1,7 @@
 package org.example.tfgenrique.controller;
 
 import jakarta.servlet.http.HttpSession;
+import org.example.tfgenrique.service.CatalogoAosService;
 import org.example.tfgenrique.service.Catalogo40kService;
 import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData;
 import org.example.tfgenrique.service.Catalogo40kService.Ejercito40k;
@@ -23,13 +24,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class MenuPrincipalController {
 
     private final Catalogo40kService catalogo40kService;
+    private final CatalogoAosService catalogoAosService;
     private final CreacionListasService creacionListasService;
 
     public MenuPrincipalController(
             Catalogo40kService catalogo40kService,
+            CatalogoAosService catalogoAosService,
             CreacionListasService creacionListasService
     ) {
         this.catalogo40kService = catalogo40kService;
+        this.catalogoAosService = catalogoAosService;
         this.creacionListasService = creacionListasService;
     }
 
@@ -55,7 +59,21 @@ public class MenuPrincipalController {
                 catalogo,
                 errorCatalogo
         );
+        CatalogoAosService.Catalogo40kData catalogoAos = catalogoAosService.getData();
+        if (catalogoAos == null) {
+            try {
+                catalogoAos = catalogoAosService.actualizarCatalogo();
+            } catch (IllegalStateException ignored) {
+                // Si AoS falla, el menu sigue cargando con 40k.
+            }
+        }
+        CatalogoAosService.MenuPrincipalView menuPrincipalAos = catalogoAosService.prepararMenuPrincipal(
+                nombreUsuario.toString(),
+                catalogoAos,
+                null
+        );
         model.addAttribute("menuPrincipal", menuPrincipal);
+        model.addAttribute("menuPrincipalAos", menuPrincipalAos);
         return "menuPrincipal";
     }
 
