@@ -1,0 +1,187 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogoMisiones juego="WH40K_10" nombre="Misiones Primarias Warhammer 40k 2025">
+
+    <misionesPrimarias>
+
+        <mision id="hidden-supplies">
+            <titulo>Suministros Ocultos</titulo>
+            <puntuacion>
+                5 VP por controlar 1 objetivo fuera de tu zona de despliegue.
+                5 VP adicionales por controlar 2 objetivos fuera de tu zona de despliegue.
+                5 VP adicionales si controlas más objetivos que tu oponente.
+            </puntuacion>
+            <descripcion>
+                Se añade un objetivo adicional en Tierra de Nadie tras desplazar el objetivo central.
+            </descripcion>
+        </mision>
+
+        <mision id="burden-of-trust">
+            <titulo>Carga de la Confianza</titulo>
+            <puntuacion>
+                4 VP por cada objetivo controlado fuera de tu zona de despliegue.
+                2 VP por cada unidad que esté protegiendo un objetivo controlado.
+            </puntuacion>
+            <descripcion>
+                Las unidades pueden designarse para custodiar objetivos hasta el inicio del siguiente turno.
+            </descripcion>
+        </mision>
+
+        <mision id="linchpin">
+            <titulo>Punto Clave</titulo>
+            <puntuacion>
+                Si no controlas tu objetivo de despliegue: 3 VP por cada objetivo controlado.
+                Si lo controlas: 5 VP por el objetivo de despliegue y 3 VP por cada otro objetivo.
+                Máximo 15 VP.
+            </puntuacion>
+            <descripcion>
+                Mantener el control del objetivo de despliegue aumenta la puntuación obtenida.
+            </descripcion>
+        </mision>
+
+        <mision id="purge-the-foe">
+            <titulo>Purgar al Enemigo</titulo>
+            <puntuacion>
+                4 VP si destruyes una o más unidades enemigas en la ronda.
+                4 VP adicionales si destruyes más unidades enemigas que las propias perdidas.
+                4 VP por controlar al menos un objetivo.
+                4 VP adicionales por controlar más objetivos que el rival.
+            </puntuacion>
+            <descripcion>
+                Combina control de objetivos con destrucción de unidades enemigas.
+            </descripcion>
+        </mision>
+
+        <mision id="scorched-earth">
+            <titulo>Tierra Quemada</titulo>
+            <puntuacion>
+                5 VP por cada objetivo controlado.
+                5 VP por quemar un objetivo en Tierra de Nadie.
+                10 VP por quemar un objetivo en la zona de despliegue enemiga.
+            </puntuacion>
+            <descripcion>
+                Las unidades pueden realizar la acción Quemar Objetivo para eliminar objetivos del campo de batalla.
+            </descripcion>
+        </mision>
+
+        <mision id="supply-drop">
+            <titulo>Lanzamiento de Suministros</titulo>
+            <puntuacion>
+                Rondas 2 y 3: 5 VP por objetivo controlado.
+                Ronda 4: 8 VP por objetivo controlado.
+                Ronda 5: 15 VP por objetivo controlado.
+            </puntuacion>
+            <descripcion>
+                Dos objetivos especiales desaparecen progresivamente durante la batalla.
+            </descripcion>
+        </mision>
+
+        <mision id="take-and-hold">
+            <titulo>Tomar y Mantener</titulo>
+            <puntuacion>
+                5 VP por cada objetivo controlado.
+                Máximo 15 VP.
+            </puntuacion>
+            <descripcion>
+                Misión clásica centrada exclusivamente en el control de objetivos.
+            </descripcion>
+        </mision>
+
+        <mision id="terraform">
+            <titulo>Terraformar</titulo>
+            <puntuacion>
+                4 VP por cada objetivo controlado.
+                1 VP por cada objetivo terraformado.
+            </puntuacion>
+            <descripcion>
+                Las unidades pueden terraformar objetivos para obtener puntos adicionales.
+            </descripcion>
+        </mision>
+
+        <mision id="the-ritual">
+            <titulo>El Ritual</titulo>
+            <puntuacion>
+                5 VP por cada objetivo controlado en Tierra de Nadie.
+                Máximo 15 VP.
+            </puntuacion>
+            <descripcion>
+                Las unidades pueden realizar un ritual para crear nuevos objetivos en el campo de batalla.
+            </descripcion>
+        </mision>
+
+        <mision id="unexploded-ordnance">
+            <titulo>Munición Sin Explotar</titulo>
+            <puntuacion>
+                8 VP por marcador de peligro dentro de la zona enemiga.
+                5 VP por marcador de peligro a 6 pulgadas de la zona enemiga.
+                2 VP por marcador de peligro a 12 pulgadas de la zona enemiga.
+            </puntuacion>
+            <descripcion>
+                Los objetivos pueden desplazarse mediante una acción especial.
+            </descripcion>
+        </mision>
+
+        <mision id="syphoned-power">
+            <titulo>Poder Drenado</titulo>
+            <puntuacion>
+                2 VP por drenar un objetivo en tu zona.
+                3 VP por drenar un objetivo en Tierra de Nadie.
+                5 VP por drenar un objetivo en la zona enemiga.
+            </puntuacion>
+            <descripcion>
+                Misión asimétrica donde el atacante roba puntos de victoria al defensor.
+            </descripcion>
+        </mision>
+
+        <mision id="hold-out">
+            <titulo>Resistir</titulo>
+            <puntuacion>
+                5 VP por cada objetivo controlado.
+                Máximo 15 VP.
+            </puntuacion>
+            <descripcion>
+                Misión asimétrica basada en mantener posiciones defensivas.
+            </descripcion>
+        </mision>
+
+        <mision id="denied-resources">
+            <titulo>Recursos Denegados</titulo>
+            <puntuacion>
+                7 VP por eliminar un objetivo en tu zona.
+                10 VP por eliminar un objetivo en Tierra de Nadie.
+                16 VP por eliminar un objetivo en la zona enemiga.
+            </puntuacion>
+            <descripcion>
+                Los objetivos pueden ser eliminados permanentemente del campo de batalla.
+            </descripcion>
+        </mision>
+
+        <mision id="establish-control">
+            <titulo>Establecer el Control</titulo>
+            <puntuacion>
+                Si no controlas todos los objetivos de tu despliegue:
+                3 VP por cada objetivo controlado.
+                Si los controlas:
+                3 VP por cada objetivo de despliegue y 5 VP por cada otro objetivo.
+            </puntuacion>
+            <descripcion>
+                Recompensa mantener asegurada la zona de despliegue propia.
+            </descripcion>
+        </mision>
+
+        <mision id="uneven-ground">
+            <titulo>Terreno Desigual</titulo>
+            <puntuacion>
+                4 VP por objetivo controlado en tu zona.
+                2 VP por objetivo controlado en Tierra de Nadie.
+                6 VP por objetivo controlado en la zona enemiga.
+            </puntuacion>
+            <descripcion>
+                La puntuación depende de la ubicación de los objetivos controlados.
+            </descripcion>
+        </mision>
+
+    </misionesPrimarias>
+
+</catalogoMisiones>
+```

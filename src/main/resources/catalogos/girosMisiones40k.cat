@@ -1,0 +1,100 @@
+```xml
+<cartasGiro>
+
+    <carta id="adapt-or-die">
+        <titulo>Adaptarse o Morir</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Dos veces por batalla, después de robar una carta de Misión Secundaria, ese jugador puede robar otra carta de Misión Secundaria y después barajar una de esas dos cartas de vuelta en su mazo de Misiones Secundarias.
+        </descripcion>
+        <condiciones>
+            <condicion>Para jugadores que usan misiones tácticas.</condicion>
+            <condicion>Se puede usar dos veces por batalla.</condicion>
+        </condiciones>
+        <efectoFijas>
+            Una vez por batalla, al final del turno de ese jugador, después de puntuar cualquier VP, puede descartar una de sus cartas de Misión Secundaria y reemplazarla por otra carta de Misión Secundaria que tenga el símbolo de Misión Fija.
+        </efectoFijas>
+    </carta>
+
+    <carta id="bloodlust">
+        <titulo>Sed de Sangre</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Una unidad es elegible para cargar si está a 18" o menos de una o más unidades enemigas, en lugar de a 12" o menos.
+        </descripcion>
+        <condiciones>
+            <condicion>Cada vez que hagas una tirada de carga, tira 3D6.</condicion>
+        </condiciones>
+    </carta>
+
+    <carta id="high-octane">
+        <titulo>Alto Octanaje</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Cada vez que una unidad Avance, no hagas una tirada de Avance. En su lugar, hasta el final de la fase, suma 6" a la característica de Movimiento de los modelos de esa unidad.
+        </descripcion>
+    </carta>
+
+    <carta id="lords-of-war">
+        <titulo>Señores de la Guerra</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Hasta el final de la batalla, suma 3 a la característica de Ataques de cada arma equipada por modelos WARLORD, excluyendo VEHÍCULOS.
+        </descripcion>
+    </carta>
+
+    <carta id="martial-pride">
+        <titulo>Orgullo Marcial</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Avanzar no hace que una unidad BATTLELINE no sea elegible para iniciar una Acción, excluyendo unidades VEHICLE.
+        </descripcion>
+        <condiciones>
+            <condicion>Iniciar una Acción no hace que una unidad BATTLELINE no sea elegible para disparar, excluyendo unidades VEHICLE.</condicion>
+        </condiciones>
+    </carta>
+
+    <carta id="night-fighting">
+        <titulo>Combate Nocturno</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Cada unidad solo puede ser objetivo de un ataque a distancia si el modelo atacante está a 18" o menos.
+        </descripcion>
+    </carta>
+
+    <carta id="point-blank">
+        <titulo>A Bocajarro</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Las armas a distancia, excluyendo las armas con [BLAST], tienen la habilidad [PISTOL].
+        </descripcion>
+    </carta>
+
+    <carta id="rapid-escalation">
+        <titulo>Escalada Rápida</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            En la primera ronda de batalla, los jugadores pueden desplegar unidades desde Reservas Estratégicas en el paso de Refuerzos de su fase de Movimiento.
+        </descripcion>
+        <condiciones>
+            <condicion>Las unidades deben desplegarse completamente a 6" o menos de cualquier borde del campo de batalla.</condicion>
+            <condicion>Ningún modelo de esas unidades puede desplegarse dentro de la zona de despliegue enemiga.</condicion>
+            <condicion>Una unidad desplegada de esta manera no puede usar la habilidad Deep Strike.</condicion>
+        </condiciones>
+        <limitesPuntos>
+            <limite tamanoBatalla="Incursion">200 puntos</limite>
+            <limite tamanoBatalla="Strike Force">400 puntos</limite>
+            <limite tamanoBatalla="Asymmetric War">400 puntos</limite>
+        </limitesPuntos>
+    </carta>
+
+    <carta id="ruinscape">
+        <titulo>Paisaje en Ruinas</titulo>
+        <tipo>Giro</tipo>
+        <descripcion>
+            Cada vez que una unidad haga un movimiento Normal o de Avance, puede moverse horizontalmente a través de elementos de terreno.
+        </descripcion>
+    </carta>
+
+</cartasGiro>
+```

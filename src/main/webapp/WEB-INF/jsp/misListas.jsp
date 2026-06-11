@@ -5,27 +5,39 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mis listas 40k</title>
+    <title>Mis listas</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
+    <style>
+      .filters-bar {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: end;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+
+      .filter-form {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+        flex-wrap: wrap;
+      }
+
+      .summary-chip {
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(14, 22, 34, 0.62);
+      }
+    </style>
   </head>
   <body>
+    <c:set var="sidebarActive" value="listas" />
+    <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1 class="brand-title">TFG</h1>
-          <p class="brand-subtitle">Wargame Commander</p>
-        </div>
-        <nav class="sidebar-nav">
-          <a class="sidebar-link" href="/menu-principal">Menu</a>
-          <a class="sidebar-link" href="/catalogo40k">Catalogos</a>
-          <a class="sidebar-link active" href="/mis-listas-40k">Listas</a>
-          <span class="sidebar-link disabled">Partidas</span>
-          <span class="sidebar-link disabled">Comunidades</span>
-          <span class="sidebar-link disabled">Estadisticas</span>
-          <span class="sidebar-link disabled">Ajustes</span>
-        </nav>
-        <div class="sidebar-footer">TFG Enrique<br />Build academica v1</div>
-      </aside>
+      <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">
@@ -39,18 +51,43 @@
           <section class="page-panel">
             <div class="page-header">
               <h2 class="page-title">Mis listas</h2>
-              <p class="page-subtitle">Consulta las listas guardadas y entra a su detalle.</p>
+              <p class="page-subtitle">Consulta las listas guardadas y filtralas por juego.</p>
+            </div>
+
+            <div class="filters-bar">
+              <form class="filter-form" method="get" action="/mis-listas">
+                <label>
+                  Juego
+                  <select name="formatoJuego">
+                    <c:forEach var="formato" items="${misListas.formatosDisponibles}">
+                      <c:choose>
+                        <c:when test="${misListas.formatoJuegoSeleccionado eq formato.codigo}">
+                          <option value="${formato.codigo}" selected><c:out value="${formato.nombre}" /></option>
+                        </c:when>
+                        <c:otherwise>
+                          <option value="${formato.codigo}"><c:out value="${formato.nombre}" /></option>
+                        </c:otherwise>
+                      </c:choose>
+                    </c:forEach>
+                  </select>
+                </label>
+                <button class="button-primary" type="submit">Filtrar</button>
+                <button type="button" class="button-secondary" id="abrirPopupCreador">Crear lista</button>
+              </form>
+
+              <span class="summary-chip"><c:out value="${misListas.listas.size()}" /> listas</span>
             </div>
 
             <c:choose>
               <c:when test="${empty misListas.listas}">
-                <div class="note-box">No tienes listas guardadas.</div>
+                <div class="note-box">No tienes listas guardadas para el filtro seleccionado.</div>
               </c:when>
               <c:otherwise>
                 <table class="data-table">
                   <thead>
                     <tr>
                       <th>Nombre</th>
+                      <th>Juego</th>
                       <th>Faccion</th>
                       <th>Ejercito</th>
                       <th>Puntos</th>
@@ -68,6 +105,7 @@
                             <c:out value="${lista.nombreLista}" />
                           </a>
                         </td>
+                        <td><c:out value="${lista.formatoJuego}" /></td>
                         <td><c:out value="${lista.faccion}" /></td>
                         <td><c:out value="${lista.ejercito}" /></td>
                         <td><c:out value="${lista.puntos}" /></td>

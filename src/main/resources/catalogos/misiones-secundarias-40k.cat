@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogoMisiones juego="WH40K_10" nombre="Misiones Secundarias Warhammer 40k">
+    <misionesSecundarias>
+        <mision id="secundaria-eliminar-unidad">
+            <titulo>Eliminar una unidad enemiga</titulo>
+            <puntuacion>5 VP si destruyes una unidad enemiga durante la ronda.</puntuacion>
+            <descripcion>Esta mision premia causar bajas importantes al rival.</descripcion>
+            <condiciones>
+                <condicion>La unidad enemiga debe quedar destruida durante la ronda actual.</condicion>
+                <condicion>Solo se puede puntuar una vez por ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-controlar-centro">
+            <titulo>Controlar el centro</titulo>
+            <puntuacion>5 VP si controlas el objetivo central al final de la ronda.</puntuacion>
+            <descripcion>El jugador debe mantener presencia en el centro del campo de batalla.</descripcion>
+            <condiciones>
+                <condicion>Debes controlar el objetivo central al final de la ronda.</condicion>
+                <condicion>Una unidad acobardada no puede cumplir esta mision.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-romper-lineas">
+            <titulo>Romper lineas</titulo>
+            <puntuacion>5 VP si tienes una unidad en la zona de despliegue enemiga.</puntuacion>
+            <descripcion>El jugador puntua por avanzar hasta la retaguardia rival.</descripcion>
+            <condiciones>
+                <condicion>La unidad debe estar completamente dentro de la zona enemiga.</condicion>
+                <condicion>No cuentan unidades Battle-shocked.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-mantener-flanco">
+            <titulo>Mantener un flanco</titulo>
+            <puntuacion>4 VP si controlas un objetivo de un flanco al final de la ronda.</puntuacion>
+            <descripcion>El jugador debe asegurar una zona lateral del tablero.</descripcion>
+            <condiciones>
+                <condicion>Debes controlar un objetivo que no este en el centro.</condicion>
+                <condicion>El objetivo debe estar fuera de tu zona de despliegue.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-acciones-tacticas">
+            <titulo>Acciones tacticas</titulo>
+            <puntuacion>5 VP si una unidad completa una accion tactica esta ronda.</puntuacion>
+            <descripcion>Una unidad dedica la ronda a cumplir un objetivo tactico.</descripcion>
+            <condiciones>
+                <condicion>La unidad no puede haber avanzado ni cargado esta ronda.</condicion>
+                <condicion>La accion se completa al final de la ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-cazar-personaje">
+            <titulo>Cazar personaje</titulo>
+            <puntuacion>5 VP si destruyes una unidad Character enemiga.</puntuacion>
+            <descripcion>El jugador puntua por eliminar lideres o personajes importantes.</descripcion>
+            <condiciones>
+                <condicion>La unidad destruida debe tener la palabra clave Character.</condicion>
+                <condicion>Solo se puede puntuar una vez por ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-defender-objetivo">
+            <titulo>Defender objetivo</titulo>
+            <puntuacion>4 VP si conservas un objetivo que ya controlabas al inicio de la ronda.</puntuacion>
+            <descripcion>El jugador puntua por mantener posiciones ya ganadas.</descripcion>
+            <condiciones>
+                <condicion>Debias controlar el objetivo al inicio de la ronda.</condicion>
+                <condicion>Debes seguir controlandolo al final de la ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-sin-retirada">
+            <titulo>Sin retirada</titulo>
+            <puntuacion>3 VP si ninguna de tus unidades retrocede durante la ronda.</puntuacion>
+            <descripcion>El jugador puntua por mantener la presion sin ceder terreno.</descripcion>
+            <condiciones>
+                <condicion>No puedes haber hecho movimientos de retirada esta ronda.</condicion>
+                <condicion>Debes tener al menos una unidad en tierra de nadie.</condicion>
+            </condiciones>
+        </mision>
+    </misionesSecundarias>
+</catalogoMisiones>

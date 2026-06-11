@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogoMisiones juego="WH40K_10" nombre="Chapter Approved Tournament Mission Pool">
+
+    <combinaciones>
+
+        <combinacion letra="A">
+            <misionPrimaria>Take and Hold</misionPrimaria>
+            <despliegue>Tipping Point</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="B">
+            <misionPrimaria>Supply Drop</misionPrimaria>
+            <despliegue>Tipping Point</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="C">
+            <misionPrimaria>Linchpin</misionPrimaria>
+            <despliegue>Tipping Point</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="D">
+            <misionPrimaria>Scorched Earth</misionPrimaria>
+            <despliegue>Tipping Point</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="E">
+            <misionPrimaria>Take and Hold</misionPrimaria>
+            <despliegue>Hammer and Anvil</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="F">
+            <misionPrimaria>Hidden Supplies</misionPrimaria>
+            <despliegue>Hammer and Anvil</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="G">
+            <misionPrimaria>Purge the Foe</misionPrimaria>
+            <despliegue>Hammer and Anvil</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="H">
+            <misionPrimaria>Supply Drop</misionPrimaria>
+            <despliegue>Hammer and Anvil</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="I">
+            <misionPrimaria>Hidden Supplies</misionPrimaria>
+            <despliegue>Search and Destroy</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="3"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="J">
+            <misionPrimaria>Linchpin</misionPrimaria>
+            <despliegue>Search and Destroy</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="3"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="K">
+            <misionPrimaria>Scorched Earth</misionPrimaria>
+            <despliegue>Search and Destroy</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="3"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="L">
+            <misionPrimaria>Take and Hold</misionPrimaria>
+            <despliegue>Search and Destroy</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="3"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="M">
+            <misionPrimaria>Purge the Foe</misionPrimaria>
+            <despliegue>Crucible of Battle</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="N">
+            <misionPrimaria>Hidden Supplies</misionPrimaria>
+            <despliegue>Crucible of Battle</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="O">
+            <misionPrimaria>Terraform</misionPrimaria>
+            <despliegue>Crucible of Battle</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="P">
+            <misionPrimaria>Scorched Earth</misionPrimaria>
+            <despliegue>Crucible of Battle</despliegue>
+            <layoutsRecomendados>
+                <layout numero="1"/>
+                <layout numero="2"/>
+                <layout numero="4"/>
+                <layout numero="6"/>
+                <layout numero="7"/>
+                <layout numero="8"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="Q">
+            <misionPrimaria>Supply Drop</misionPrimaria>
+            <despliegue>Sweeping Engagement</despliegue>
+            <layoutsRecomendados>
+                <layout numero="3"/>
+                <layout numero="5"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="R">
+            <misionPrimaria>Terraform</misionPrimaria>
+            <despliegue>Sweeping Engagement</despliegue>
+            <layoutsRecomendados>
+                <layout numero="3"/>
+                <layout numero="5"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="S">
+            <misionPrimaria>Linchpin</misionPrimaria>
+            <despliegue>Dawn of War</despliegue>
+            <layoutsRecomendados>
+                <layout numero="5"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+        <combinacion letra="T">
+            <misionPrimaria>Purge the Foe</misionPrimaria>
+            <despliegue>Dawn of War</despliegue>
+            <layoutsRecomendados>
+                <layout numero="5"/>
+            </layoutsRecomendados>
+        </combinacion>
+
+    </combinaciones>
+
+</catalogoMisiones>

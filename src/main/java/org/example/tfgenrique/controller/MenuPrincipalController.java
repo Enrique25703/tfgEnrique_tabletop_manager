@@ -8,7 +8,7 @@ import org.example.tfgenrique.service.Catalogo40kService.Ejercito40k;
 import org.example.tfgenrique.service.Catalogo40kService.MenuPrincipalView;
 import org.example.tfgenrique.service.CreacionListasService.CreadorLista40kView;
 import org.example.tfgenrique.service.CreacionListasService.DetalleLista40kView;
-import org.example.tfgenrique.service.CreacionListasService.MisListas40kView;
+import org.example.tfgenrique.service.CreacionListasService.MisListasView;
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.CreacionListasService.GuardadoListaResultado;
 import org.example.tfgenrique.service.CreacionListasService.GuardarListaRequest;
@@ -109,16 +109,29 @@ public class MenuPrincipalController {
     }
 
     @GetMapping("/mis-listas-40k")
-    public String mostrarMisListas40k(HttpSession session, Model model) {
+    public String redirigirMisListasAntiguo() {
+        return "redirect:/mis-listas";
+    }
+
+    @GetMapping("/mis-listas")
+    public String mostrarMisListas(
+            HttpSession session,
+            @RequestParam(value = "formatoJuego", required = false) String formatoJuego,
+            Model model
+    ) {
         Object nombreUsuario = session.getAttribute("nombreUsuario");
         if (nombreUsuario == null) {
             return "redirect:/";
         }
 
         java.util.List<ListaGuardadaView> listas = creacionListasService.obtenerListasGuardadas(nombreUsuario.toString());
-        MisListas40kView misListas = creacionListasService.prepararMisListas40kView(nombreUsuario.toString(), listas);
+        MisListasView misListas = creacionListasService.prepararMisListasView(
+                nombreUsuario.toString(),
+                listas,
+                formatoJuego
+        );
         model.addAttribute("misListas", misListas);
-        return "misListas40k";
+        return "misListas";
     }
 
     @GetMapping("/mi-lista-40k")

@@ -503,6 +503,11 @@ public class CatalogoAosService {
         }
 
         for (Element grupo : gruposDirectos) {
+            if (!esGrupoComposicion(grupo)) {
+                continue;
+            }
+
+            String idSeleccionPorDefecto = leerIdSeleccionPorDefecto(grupo, grupo);
             for (Element entrada : obtenerSelectionEntriesContenidas(grupo)) {
                 GrupoMiniaturas40k grupoPrincipal = leerGrupoJerarquico(
                         entrada,
@@ -520,6 +525,7 @@ public class CatalogoAosService {
                         valorSeguroONulo(entrada.getAttribute("id")),
                         valorSeguroONulo(entrada.getAttribute("name")),
                         puntos,
+                        valorSeguroONulo(entrada.getAttribute("id")).equals(idSeleccionPorDefecto),
                         List.of(grupoPrincipal)
                 ));
             }
@@ -795,27 +801,32 @@ public class CatalogoAosService {
         List<String> equipamientoFijo = new ArrayList<>(leerEquipamientoFijoDirecto(entradaModelo));
         List<GrupoEquipamiento40k> gruposEquipamiento = new ArrayList<>();
 
-        Element contenedorGrupos = primerHijoDirecto(entradaModelo, "selectionEntryGroups");
-        if (contenedorGrupos != null) {
-            for (Element grupo : hijosDirectos(contenedorGrupos, "selectionEntryGroup")) {
-                GrupoEquipamiento40k grupoEquipamiento = leerGrupoEquipamiento(
-                        grupo,
-                        selectionEntriesPorId,
-                        selectionEntryGroupsPorId
-                );
-                if (grupoEquipamiento == null || grupoEquipamiento.opciones().isEmpty()) {
-                    continue;
-                }
-
-                if (grupoEquipamiento.opciones().size() == 1
-                        && grupoEquipamiento.minimo() == 1
-                        && grupoEquipamiento.maximo() == 1) {
-                    equipamientoFijo.add(grupoEquipamiento.opciones().get(0).nombre());
-                    continue;
-                }
-
-                gruposEquipamiento.add(grupoEquipamiento);
+        for (GroupNode grupo : obtenerGruposDirectos(entradaModelo, selectionEntryGroupsPorId)) {
+            String nombreGrupo = valorSeguroONulo(grupo.origen().getAttribute("name")).isBlank()
+                    ? valorSeguroONulo(grupo.definicion().getAttribute("name"))
+                    : valorSeguroONulo(grupo.origen().getAttribute("name"));
+            if (debeIgnorarGrupoAnidado(nombreGrupo)) {
+                continue;
             }
+
+            GrupoEquipamiento40k grupoEquipamiento = leerGrupoEquipamiento(
+                    grupo.definicion(),
+                    grupo.origen(),
+                    selectionEntriesPorId,
+                    selectionEntryGroupsPorId
+            );
+            if (grupoEquipamiento == null || grupoEquipamiento.opciones().isEmpty()) {
+                continue;
+            }
+
+            if (grupoEquipamiento.opciones().size() == 1
+                    && grupoEquipamiento.minimo() == 1
+                    && grupoEquipamiento.maximo() == 1) {
+                equipamientoFijo.add(grupoEquipamiento.opciones().get(0).nombre());
+                continue;
+            }
+
+            gruposEquipamiento.add(grupoEquipamiento);
         }
 
         return new ModeloUnidad40k(
@@ -922,25 +933,43 @@ public class CatalogoAosService {
 
     private GrupoEquipamiento40k leerGrupoEquipamiento(
             Element grupo,
+            Element origen,
             Map<String, Element> selectionEntriesPorId,
             Map<String, Element> selectionEntryGroupsPorId
     ) {
         List<OpcionEquipamiento40k> opciones = new ArrayList<>();
         recopilarOpcionesEquipamiento(grupo, opciones, selectionEntriesPorId, selectionEntryGroupsPorId, new LinkedHashSet<>());
-        int minimo = leerRestriccionNumerica(grupo, "min", "parent", "unit");
-        int maximo = leerRestriccionNumerica(grupo, "max", "parent", "unit");
+        int minimo = leerRestriccionNumerica(origen, "min", "parent", "unit");
+        if (minimo <= 0) {
+            minimo = leerRestriccionNumerica(grupo, "min", "parent", "unit");
+        }
+        int maximo = leerRestriccionNumerica(origen, "max", "parent", "unit");
+        if (maximo <= 0) {
+            maximo = leerRestriccionNumerica(grupo, "max", "parent", "unit");
+        }
         if (maximo <= 0) {
             maximo = opciones.size() <= 1 ? 1 : opciones.size();
         }
 
+        String idSeleccionPorDefecto = leerIdSeleccionPorDefecto(origen, grupo);
         opciones = opciones.stream()
                 .filter(opcion -> opcion.nombre() != null && !opcion.nombre().isBlank())
                 .distinct()
+                .map(opcion -> new OpcionEquipamiento40k(
+                        opcion.id(),
+                        opcion.nombre(),
+                        opcion.id().equals(idSeleccionPorDefecto),
+                        opcion.detalleEquipamiento()
+                ))
                 .toList();
 
         return new GrupoEquipamiento40k(
-                valorSeguroONulo(grupo.getAttribute("id")),
-                valorSeguroONulo(grupo.getAttribute("name")),
+                valorSeguroONulo(origen.getAttribute("id")).isBlank()
+                        ? valorSeguroONulo(grupo.getAttribute("id"))
+                        : valorSeguroONulo(origen.getAttribute("id")),
+                valorSeguroONulo(origen.getAttribute("name")).isBlank()
+                        ? valorSeguroONulo(grupo.getAttribute("name"))
+                        : valorSeguroONulo(origen.getAttribute("name")),
                 minimo,
                 maximo,
                 List.copyOf(opciones)
@@ -973,7 +1002,9 @@ public class CatalogoAosService {
                 if (!nombre.isBlank()) {
                     opciones.add(new OpcionEquipamiento40k(
                             valorSeguroONulo(entrada.getAttribute("id")),
-                            nombre
+                            nombre,
+                            false,
+                            leerEquipamientoOpcion(entrada)
                     ));
                 }
             }
@@ -999,13 +1030,36 @@ public class CatalogoAosService {
 
                 String nombre = valorSeguroONulo(enlace.getAttribute("name"));
                 if (!nombre.isBlank()) {
+                    Element entradaResuelta = selectionEntriesPorId.get(enlace.getAttribute("targetId"));
                     opciones.add(new OpcionEquipamiento40k(
                             valorSeguroONulo(enlace.getAttribute("id")),
-                            nombre
+                            nombre,
+                            false,
+                            entradaResuelta == null ? List.of() : leerEquipamientoOpcion(entradaResuelta)
                     ));
                 }
             }
         }
+    }
+
+    private boolean esGrupoComposicion(Element grupo) {
+        String nombreGrupo = valorSeguroONulo(grupo.getAttribute("name")).toLowerCase(Locale.ROOT);
+        return nombreGrupo.contains("composition");
+    }
+
+    private String leerIdSeleccionPorDefecto(Element origen, Element definicion) {
+        String id = valorSeguroONulo(origen.getAttribute("defaultSelectionEntryId"));
+        if (!id.isBlank()) {
+            return id;
+        }
+        return valorSeguroONulo(definicion.getAttribute("defaultSelectionEntryId"));
+    }
+
+    private List<String> leerEquipamientoOpcion(Element entrada) {
+        return leerEquipamientoFijoDirecto(entrada).stream()
+                .filter(texto -> texto != null && !texto.isBlank())
+                .distinct()
+                .toList();
     }
 
     private boolean debeIgnorarGrupoAnidado(String nombreGrupo) {
@@ -1304,6 +1358,7 @@ public class CatalogoAosService {
             String id,
             String nombre,
             int puntos,
+            boolean seleccionPorDefecto,
             List<GrupoMiniaturas40k> gruposMiniaturas
     ) {
     }
@@ -1339,7 +1394,9 @@ public class CatalogoAosService {
 
     public record OpcionEquipamiento40k(
             String id,
-            String nombre
+            String nombre,
+            boolean seleccionPorDefecto,
+            List<String> detalleEquipamiento
     ) {
     }
 

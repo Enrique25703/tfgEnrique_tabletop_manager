@@ -37,11 +37,101 @@
 
       #configuracionUnidad {
         display: grid;
-        gap: 12px;
+        gap: 14px;
       }
 
       #notasUnidad {
         min-height: 160px;
+      }
+
+      .config-card {
+        padding: 14px;
+        border: 1px solid rgba(130, 173, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(12, 18, 28, 0.72);
+      }
+
+      .config-card-title,
+      .choice-title,
+      .instance-title,
+      .gear-title,
+      .model-name {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .config-group.nivel-1,
+      .config-group.nivel-2,
+      .config-group.nivel-3 {
+        margin-left: 10px;
+      }
+
+      .group-header,
+      .model-header,
+      .choice-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .group-count,
+      .choice-count,
+      .count-value {
+        padding: 7px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(20, 29, 44, 0.94);
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .model-card,
+      .instance-card,
+      .choice-card,
+      .gear-list {
+        margin-top: 12px;
+        padding: 12px;
+        border: 1px solid rgba(130, 173, 255, 0.14);
+        border-radius: 12px;
+        background: rgba(15, 23, 35, 0.78);
+      }
+
+      .model-info,
+      .model-detail {
+        display: grid;
+        gap: 8px;
+      }
+
+      .model-range {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .count-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .count-button {
+        min-width: 38px;
+        min-height: 38px;
+        padding: 0;
+      }
+
+      .choice-row,
+      .gear-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .gear-items {
+        display: grid;
+        gap: 8px;
       }
 
       @media (max-width: 1200px) {
@@ -52,23 +142,10 @@
     </style>
   </head>
   <body>
+    <c:set var="sidebarActive" value="listas" />
+    <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1 class="brand-title">TFG</h1>
-          <p class="brand-subtitle">Wargame Commander</p>
-        </div>
-        <nav class="sidebar-nav">
-          <a class="sidebar-link" href="/menu-principal">Menu</a>
-          <a class="sidebar-link" href="/catalogo40k">Catalogos</a>
-          <a class="sidebar-link active" href="/mis-listas-40k">Listas</a>
-          <span class="sidebar-link disabled">Partidas</span>
-          <span class="sidebar-link disabled">Comunidades</span>
-          <span class="sidebar-link disabled">Estadisticas</span>
-          <span class="sidebar-link disabled">Ajustes</span>
-        </nav>
-        <div class="sidebar-footer">TFG Enrique<br />Build academica v1</div>
-      </aside>
+      <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">
@@ -123,6 +200,7 @@
                           data-puntos="<c:out value='${unidad.puntos}'/>"
                           data-puntos-base="<c:out value='${unidad.puntosBase}'/>"
                           data-categoria="<c:out value='${unidad.categoria}'/>"
+                          data-armas="<c:out value='${unidad.armas}'/>"
                           data-configuracion-json="<c:out value='${unidad.configuracionJson}'/>">
                           <c:out value="${unidad.nombre}" /> (<c:out value="${unidad.puntos}" /> pts)
                         </button>

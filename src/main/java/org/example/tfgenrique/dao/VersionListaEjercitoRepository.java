@@ -16,6 +16,7 @@ public interface VersionListaEjercitoRepository extends JpaRepository<VersionLis
             SELECT
                 le.id AS listaId,
                 le.nombre AS nombreLista,
+                sj.codigo AS formatoJuego,
                 le.nombre_faccion_snapshot AS faccion,
                 JSON_UNQUOTE(JSON_EXTRACT(vle.datos_lista, '$.ejercito')) AS ejercito,
                 le.puntos_actuales AS puntosActuales,
@@ -23,6 +24,7 @@ public interface VersionListaEjercitoRepository extends JpaRepository<VersionLis
                 vle.numero_version AS numeroVersion
             FROM versiones_lista_ejercito vle
             INNER JOIN listas_ejercito le ON le.id = vle.lista_ejercito_id
+            INNER JOIN sistemas_juego sj ON sj.id = le.sistema_juego_id
             INNER JOIN usuarios u ON u.id = le.propietario_usuario_id
             WHERE u.nombre_usuario = :nombreUsuario
               AND vle.numero_version = le.numero_version_actual
@@ -39,6 +41,7 @@ public interface VersionListaEjercitoRepository extends JpaRepository<VersionLis
                 jt.categoria AS categoria
             FROM versiones_lista_ejercito vle
             INNER JOIN listas_ejercito le ON le.id = vle.lista_ejercito_id
+            INNER JOIN sistemas_juego sj ON sj.id = le.sistema_juego_id
             INNER JOIN usuarios u ON u.id = le.propietario_usuario_id
             JOIN JSON_TABLE(
                 vle.datos_lista,
@@ -50,6 +53,7 @@ public interface VersionListaEjercitoRepository extends JpaRepository<VersionLis
                 )
             ) jt
             WHERE u.nombre_usuario = :nombreUsuario
+              AND sj.codigo = 'WH40K_10'
               AND vle.numero_version = le.numero_version_actual
             ORDER BY le.actualizado_en DESC, le.id DESC
             """, nativeQuery = true)
@@ -58,6 +62,7 @@ public interface VersionListaEjercitoRepository extends JpaRepository<VersionLis
     interface ListaGuardadaProjection {
         Long getListaId();
         String getNombreLista();
+        String getFormatoJuego();
         String getFaccion();
         String getEjercito();
         Integer getPuntosActuales();

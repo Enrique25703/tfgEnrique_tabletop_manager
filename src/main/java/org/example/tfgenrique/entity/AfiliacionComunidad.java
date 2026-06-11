@@ -8,12 +8,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "afiliaciones_comunidad")
+@Table(
+        name = "afiliaciones_comunidad",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"comunidad_id", "usuario_id"})
+)
 public class AfiliacionComunidad {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,8 +26,8 @@ public class AfiliacionComunidad {
     @JoinColumn(name = "comunidad_id", nullable = false)
     private Comunidad comunidad;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
     @Column(name = "rol_comunidad", nullable = false, length = 20)

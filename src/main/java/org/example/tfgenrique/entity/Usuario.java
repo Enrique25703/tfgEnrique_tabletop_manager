@@ -21,6 +21,9 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 120)
     private String email;
 
+    @Column(name = "foto_url", length = 255)
+    private String fotoUrl;
+
     @Column(name = "contrasena_hash", nullable = false)
     private String contrasenaHash;
 
@@ -45,6 +48,8 @@ public class Usuario {
     public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getFotoUrl() { return fotoUrl; }
+    public void setFotoUrl(String fotoUrl) { this.fotoUrl = fotoUrl; }
     public String getContrasenaHash() { return contrasenaHash; }
     public void setContrasenaHash(String contrasenaHash) { this.contrasenaHash = contrasenaHash; }
     public String getRol() { return rol; }

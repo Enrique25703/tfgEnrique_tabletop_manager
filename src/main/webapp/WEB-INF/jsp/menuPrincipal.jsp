@@ -157,28 +157,10 @@
     </style>
   </head>
   <body>
+    <c:set var="sidebarActive" value="menu" />
+    <c:set var="sidebarComunidadesEnabled" value="true" />
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1 class="brand-title">Tabletop Manager</h1>
-          <p class="brand-subtitle">Gestor de Wargames</p>
-        </div>
-
-        <nav class="sidebar-nav">
-          <a class="sidebar-link active" href="/menu-principal">Menu</a>
-          <a class="sidebar-link" href="/catalogos">Catalogos</a>
-          <a class="sidebar-link" href="/mis-listas-40k">Listas</a>
-          <span class="sidebar-link disabled">Partidas</span>
-          <span class="sidebar-link disabled">Comunidades</span>
-          <span class="sidebar-link disabled">Estadisticas</span>
-          <span class="sidebar-link disabled">Ajustes</span>
-        </nav>
-
-        <div class="sidebar-footer">
-          TFG Enrique Silveira García<br />
-          Versión de prueba del tfg
-        </div>
-      </aside>
+      <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">
@@ -203,9 +185,9 @@
               <article class="hero-card">
                 <p class="card-kicker">Accion principal</p>
                 <h3 class="card-title">EMPEZAR<br />PARTIDA</h3>
-                <p class="card-copy">La gestion de partidas todavia no esta implementada, pero esta sera la entrada principal cuando exista el flujo completo.</p>
+                <p class="card-copy">Crea una partida de 40k, configura jugadores, layout, rondas y guarda el resultado final.</p>
                 <div class="card-actions">
-                  <button type="button" class="button-primary" disabled>Empezar partida</button>
+                  <a class="button-primary" href="/partidas">Empezar partida</a>
                 </div>
               </article>
 
@@ -224,7 +206,7 @@
                   <h3 class="card-title">Gestionar listas</h3>
                   <p class="card-copy">Consulta tus listas guardadas y crea una nueva desde el creador cuando ya tengas faccion y ejercito.</p>
                   <div class="card-actions">
-                    <a class="button-primary" href="/mis-listas-40k">Ver mis listas</a>
+                    <a class="button-primary" href="/mis-listas">Ver mis listas</a>
                     <button type="button" class="button-secondary" id="abrirPopupCreador">Crear lista</button>
                   </div>
                 </article>
@@ -232,9 +214,9 @@
                 <article class="feature-card comunidades">
                   <p class="card-kicker">Social</p>
                   <h3 class="card-title">Gestionar comunidades</h3>
-                  <p class="card-copy">El modulo de comunidades todavia no esta disponible.</p>
+                  <p class="card-copy">Crea comunidades, unete a otras, organiza eventos si eres propietario y publica invitaciones de partida si eres usuario normal.</p>
                   <div class="card-actions">
-                    <button type="button" class="button-secondary" disabled>Proximamente</button>
+                    <a class="button-secondary" href="/comunidades">Abrir comunidades</a>
                   </div>
                 </article>
               </div>
@@ -265,8 +247,8 @@
             <p class="page-subtitle">Selecciona el juego y define la faccion antes de entrar al creador.</p>
 
             <div class="popup-acciones">
-              <button type="button" class="button-primary" id="mostrarFormulario40k">Warhammer 40.000 10º edicion</button>
-              <button type="button" class="button-secondary" id="mostrarFormularioAos">Age of Sigmar 4º edicion</button>
+              <button type="button" class="button-primary" id="mostrarFormulario40k">Warhammer 40.000 10Âº edicion</button>
+              <button type="button" class="button-secondary" id="mostrarFormularioAos">Age of Sigmar 4Âº edicion</button>
               <button type="button" class="button-secondary" id="cerrarPopupCreador">Cerrar</button>
             </div>
 

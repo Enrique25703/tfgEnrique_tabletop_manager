@@ -43,23 +43,10 @@
       <c:param name="ejercito" value="${infoUnidadAos.ejercitoSeleccionado}" />
     </c:url>
 
+    <c:set var="sidebarActive" value="catalogos" />
+    <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1 class="brand-title">TFG</h1>
-          <p class="brand-subtitle">Wargame Commander</p>
-        </div>
-        <nav class="sidebar-nav">
-          <a class="sidebar-link" href="/menu-principal">Menu</a>
-          <a class="sidebar-link active" href="/catalogos">Catalogos</a>
-          <a class="sidebar-link" href="/mis-listas-40k">Listas</a>
-          <span class="sidebar-link disabled">Partidas</span>
-          <span class="sidebar-link disabled">Comunidades</span>
-          <span class="sidebar-link disabled">Estadisticas</span>
-          <span class="sidebar-link disabled">Ajustes</span>
-        </nav>
-        <div class="sidebar-footer">TFG Enrique<br />Build academica v1</div>
-      </aside>
+      <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">

@@ -1,5 +1,7 @@
 package org.example.tfgenrique.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "partidas")
@@ -44,31 +45,43 @@ public class Partida {
     @JoinColumn(name = "jugador1_usuario_id", nullable = false)
     private Usuario jugador1Usuario;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "jugador1_version_lista_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jugador1_version_lista_id")
     private VersionListaEjercito jugador1VersionLista;
 
-    @Column(name = "jugador1_nombre_lista_snapshot", nullable = false, length = 150)
+    @Column(name = "jugador1_nombre_snapshot", length = 150)
+    private String jugador1NombreSnapshot;
+
+    @Column(name = "jugador1_faccion_snapshot", length = 150)
+    private String jugador1FaccionSnapshot;
+
+    @Column(name = "jugador1_nombre_lista_snapshot", length = 150)
     private String jugador1NombreListaSnapshot;
 
-    @Column(name = "jugador1_puntos_snapshot", nullable = false)
+    @Column(name = "jugador1_puntos_snapshot")
     private Integer jugador1PuntosSnapshot;
 
     @Column(name = "jugador1_puntuacion_total", nullable = false)
     private Integer jugador1PuntuacionTotal;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "jugador2_usuario_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jugador2_usuario_id")
     private Usuario jugador2Usuario;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "jugador2_version_lista_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jugador2_version_lista_id")
     private VersionListaEjercito jugador2VersionLista;
 
-    @Column(name = "jugador2_nombre_lista_snapshot", nullable = false, length = 150)
+    @Column(name = "jugador2_nombre_snapshot", length = 150)
+    private String jugador2NombreSnapshot;
+
+    @Column(name = "jugador2_faccion_snapshot", length = 150)
+    private String jugador2FaccionSnapshot;
+
+    @Column(name = "jugador2_nombre_lista_snapshot", length = 150)
     private String jugador2NombreListaSnapshot;
 
-    @Column(name = "jugador2_puntos_snapshot", nullable = false)
+    @Column(name = "jugador2_puntos_snapshot")
     private Integer jugador2PuntosSnapshot;
 
     @Column(name = "jugador2_puntuacion_total", nullable = false)
@@ -83,6 +96,27 @@ public class Partida {
 
     @Column(name = "nombre_mision", length = 150)
     private String nombreMision;
+
+    @Column(name = "layout_mision", length = 50)
+    private String layoutMision;
+
+    @Column(name = "despliegue_mision", length = 150)
+    private String despliegueMision;
+
+    @Column(name = "estilo_juego", length = 30)
+    private String estiloJuego;
+
+    @Column(name = "jugador_defensor", length = 20)
+    private String jugadorDefensor;
+
+    @Column(name = "jugador_primero", length = 20)
+    private String jugadorPrimero;
+
+    @Column(name = "mostrar_command_points")
+    private Boolean mostrarCommandPoints;
+
+    @Column(name = "usar_cartas_giro")
+    private Boolean usarCartasGiro;
 
     @Column(columnDefinition = "text")
     private String notas;
@@ -126,6 +160,10 @@ public class Partida {
     public void setJugador1Usuario(Usuario jugador1Usuario) { this.jugador1Usuario = jugador1Usuario; }
     public VersionListaEjercito getJugador1VersionLista() { return jugador1VersionLista; }
     public void setJugador1VersionLista(VersionListaEjercito jugador1VersionLista) { this.jugador1VersionLista = jugador1VersionLista; }
+    public String getJugador1NombreSnapshot() { return jugador1NombreSnapshot; }
+    public void setJugador1NombreSnapshot(String jugador1NombreSnapshot) { this.jugador1NombreSnapshot = jugador1NombreSnapshot; }
+    public String getJugador1FaccionSnapshot() { return jugador1FaccionSnapshot; }
+    public void setJugador1FaccionSnapshot(String jugador1FaccionSnapshot) { this.jugador1FaccionSnapshot = jugador1FaccionSnapshot; }
     public String getJugador1NombreListaSnapshot() { return jugador1NombreListaSnapshot; }
     public void setJugador1NombreListaSnapshot(String jugador1NombreListaSnapshot) { this.jugador1NombreListaSnapshot = jugador1NombreListaSnapshot; }
     public Integer getJugador1PuntosSnapshot() { return jugador1PuntosSnapshot; }
@@ -136,6 +174,10 @@ public class Partida {
     public void setJugador2Usuario(Usuario jugador2Usuario) { this.jugador2Usuario = jugador2Usuario; }
     public VersionListaEjercito getJugador2VersionLista() { return jugador2VersionLista; }
     public void setJugador2VersionLista(VersionListaEjercito jugador2VersionLista) { this.jugador2VersionLista = jugador2VersionLista; }
+    public String getJugador2NombreSnapshot() { return jugador2NombreSnapshot; }
+    public void setJugador2NombreSnapshot(String jugador2NombreSnapshot) { this.jugador2NombreSnapshot = jugador2NombreSnapshot; }
+    public String getJugador2FaccionSnapshot() { return jugador2FaccionSnapshot; }
+    public void setJugador2FaccionSnapshot(String jugador2FaccionSnapshot) { this.jugador2FaccionSnapshot = jugador2FaccionSnapshot; }
     public String getJugador2NombreListaSnapshot() { return jugador2NombreListaSnapshot; }
     public void setJugador2NombreListaSnapshot(String jugador2NombreListaSnapshot) { this.jugador2NombreListaSnapshot = jugador2NombreListaSnapshot; }
     public Integer getJugador2PuntosSnapshot() { return jugador2PuntosSnapshot; }
@@ -148,6 +190,20 @@ public class Partida {
     public void setEsEmpate(Boolean esEmpate) { this.esEmpate = esEmpate; }
     public String getNombreMision() { return nombreMision; }
     public void setNombreMision(String nombreMision) { this.nombreMision = nombreMision; }
+    public String getLayoutMision() { return layoutMision; }
+    public void setLayoutMision(String layoutMision) { this.layoutMision = layoutMision; }
+    public String getDespliegueMision() { return despliegueMision; }
+    public void setDespliegueMision(String despliegueMision) { this.despliegueMision = despliegueMision; }
+    public String getEstiloJuego() { return estiloJuego; }
+    public void setEstiloJuego(String estiloJuego) { this.estiloJuego = estiloJuego; }
+    public String getJugadorDefensor() { return jugadorDefensor; }
+    public void setJugadorDefensor(String jugadorDefensor) { this.jugadorDefensor = jugadorDefensor; }
+    public String getJugadorPrimero() { return jugadorPrimero; }
+    public void setJugadorPrimero(String jugadorPrimero) { this.jugadorPrimero = jugadorPrimero; }
+    public Boolean getMostrarCommandPoints() { return mostrarCommandPoints; }
+    public void setMostrarCommandPoints(Boolean mostrarCommandPoints) { this.mostrarCommandPoints = mostrarCommandPoints; }
+    public Boolean getUsarCartasGiro() { return usarCartasGiro; }
+    public void setUsarCartasGiro(Boolean usarCartasGiro) { this.usarCartasGiro = usarCartasGiro; }
     public String getNotas() { return notas; }
     public void setNotas(String notas) { this.notas = notas; }
     public String getEstado() { return estado; }

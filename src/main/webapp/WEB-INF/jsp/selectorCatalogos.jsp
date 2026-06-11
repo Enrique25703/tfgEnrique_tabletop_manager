@@ -34,28 +34,10 @@
     </style>
   </head>
   <body>
+    <c:set var="sidebarActive" value="catalogos" />
+    <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1 class="brand-title">Tabletop Manager</h1>
-          <p class="brand-subtitle">Gestor de Wargames</p>
-        </div>
-
-        <nav class="sidebar-nav">
-          <a class="sidebar-link" href="/menu-principal">Menu</a>
-          <a class="sidebar-link active" href="/catalogos">Catalogos</a>
-          <a class="sidebar-link" href="/mis-listas-40k">Listas</a>
-          <span class="sidebar-link disabled">Partidas</span>
-          <span class="sidebar-link disabled">Comunidades</span>
-          <span class="sidebar-link disabled">Estadisticas</span>
-          <span class="sidebar-link disabled">Ajustes</span>
-        </nav>
-
-        <div class="sidebar-footer">
-          TFG Enrique Silveira García<br />
-          Versión de prueba del tfg
-        </div>
-      </aside>
+      <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">
@@ -69,20 +51,18 @@
           <section class="page-panel">
             <div class="page-header">
               <h2 class="page-title">Seleccionar juego</h2>
-              <p class="page-subtitle">Elige primero el sistema y después accederás a su filtro de facción y ejército.</p>
+              <p class="page-subtitle">Â¿QuÃ© vamos a jugar hoy comandante?.</p>
             </div>
 
             <div class="selector-grid">
               <article class="selector-card">
                 <h3>Warhammer 40.000</h3>
-                <p>Catálogo y unidades de 10ª edición con su buscador de facciones y ejércitos.</p>
-                <a class="button-primary" href="/catalogo40k">Ir al catálogo de 40k</a>
+                <a class="button-primary" href="/catalogo40k">Ir al catÃ¡logo de 40k</a>
               </article>
 
               <article class="selector-card">
                 <h3>Age of Sigmar</h3>
-                <p>Catálogo de 4ª edición con selección previa de facción y ejército.</p>
-                <a class="button-primary" href="/catalogo-aos">Ir al catálogo de AoS</a>
+                <a class="button-primary" href="/catalogo-aos">Ir al catÃ¡logo de AoS</a>
               </article>
             </div>
           </section>

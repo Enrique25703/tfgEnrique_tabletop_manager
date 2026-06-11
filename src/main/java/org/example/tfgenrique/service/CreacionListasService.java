@@ -393,6 +393,7 @@ public class CreacionListasService {
                     .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
                     .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\",")
                     .append("\"puntos\":").append(opcion.puntos()).append(',')
+                    .append("\"seleccionPorDefecto\":").append(opcion.seleccionPorDefecto()).append(',')
                     .append("\"gruposMiniaturas\":[");
 
             for (int indiceGrupo = 0; indiceGrupo < opcion.gruposMiniaturas().size(); indiceGrupo++) {
@@ -432,6 +433,7 @@ public class CreacionListasService {
                     .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
                     .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\",")
                     .append("\"puntos\":").append(opcion.puntos()).append(',')
+                    .append("\"seleccionPorDefecto\":").append(opcion.seleccionPorDefecto()).append(',')
                     .append("\"gruposMiniaturas\":[");
 
             for (int indiceGrupo = 0; indiceGrupo < opcion.gruposMiniaturas().size(); indiceGrupo++) {
@@ -490,8 +492,11 @@ public class CreacionListasService {
                     }
                     json.append('{')
                             .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
-                            .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\"")
-                            .append('}');
+                            .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\",")
+                            .append("\"seleccionPorDefecto\":").append(opcion.seleccionPorDefecto()).append(',')
+                            .append("\"detalleEquipamiento\":");
+                    serializarListaTextos(json, opcion.detalleEquipamiento());
+                    json.append('}');
                 }
 
                 json.append("]}");
@@ -555,8 +560,11 @@ public class CreacionListasService {
                     }
                     json.append('{')
                             .append("\"id\":\"").append(escaparJson(opcion.id())).append("\",")
-                            .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\"")
-                            .append('}');
+                            .append("\"nombre\":\"").append(escaparJson(opcion.nombre())).append("\",")
+                            .append("\"seleccionPorDefecto\":").append(opcion.seleccionPorDefecto()).append(',')
+                            .append("\"detalleEquipamiento\":");
+                    serializarListaTextos(json, opcion.detalleEquipamiento());
+                    json.append('}');
                 }
 
                 json.append("]}");
@@ -684,12 +692,22 @@ public class CreacionListasService {
         );
     }
 
-    public MisListas40kView prepararMisListas40kView(String nombreUsuario, List<ListaGuardadaView> listasGuardadas) {
+    public MisListasView prepararMisListasView(
+            String nombreUsuario,
+            List<ListaGuardadaView> listasGuardadas,
+            String formatoJuegoSeleccionado
+    ) {
+        String formatoSeleccionadoNormalizado = normalizarFiltroFormato(formatoJuegoSeleccionado);
         List<ListaResumenView> listas = new ArrayList<>();
         for (ListaGuardadaView lista : listasGuardadas) {
+            if (!"TODOS".equals(formatoSeleccionadoNormalizado)
+                    && !formatoSeleccionadoNormalizado.equals(valorSeguroVista(lista.formatoJuego()))) {
+                continue;
+            }
             listas.add(new ListaResumenView(
                     lista.listaId(),
                     valorSeguroVista(lista.nombreLista()),
+                    obtenerNombreFormatoJuego(lista.formatoJuego()),
                     textoMostrable(lista.faccion(), "Sin faccion"),
                     textoMostrable(lista.ejercito(), "Sin ejercito"),
                     (lista.puntosActuales() == null ? 0 : lista.puntosActuales()) + " / "
@@ -698,7 +716,16 @@ public class CreacionListasService {
             ));
         }
 
-        return new MisListas40kView(valorSeguroVista(nombreUsuario), List.copyOf(listas));
+        return new MisListasView(
+                valorSeguroVista(nombreUsuario),
+                formatoSeleccionadoNormalizado,
+                List.of(
+                        new FormatoFiltroView("TODOS", "Todos los juegos"),
+                        new FormatoFiltroView(FORMATO_40K, "Warhammer 40,000"),
+                        new FormatoFiltroView(FORMATO_AOS, "Age of Sigmar")
+                ),
+                List.copyOf(listas)
+        );
     }
 
     public DetalleLista40kView prepararDetalleLista40kView(ListaGuardadaView lista) {
@@ -756,6 +783,7 @@ public class CreacionListasService {
             resultado.add(new ListaGuardadaView(
                     lista.getListaId(),
                     valorSeguroVista(lista.getNombreLista()),
+                    valorSeguroVista(lista.getFormatoJuego()),
                     valorSeguroVista(lista.getFaccion()),
                     valorSeguroVista(lista.getEjercito()),
                     lista.getPuntosActuales() == null ? 0 : lista.getPuntosActuales(),
@@ -788,9 +816,28 @@ public class CreacionListasService {
         return texto == null || texto.isBlank() ? valorPorDefecto : texto;
     }
 
+    private String normalizarFiltroFormato(String formatoJuego) {
+        String valor = valorSeguroVista(formatoJuego);
+        if (FORMATO_40K.equals(valor) || FORMATO_AOS.equals(valor)) {
+            return valor;
+        }
+        return "TODOS";
+    }
+
+    private String obtenerNombreFormatoJuego(String formatoJuego) {
+        if (FORMATO_AOS.equals(formatoJuego)) {
+            return "Age of Sigmar";
+        }
+        if (FORMATO_40K.equals(formatoJuego)) {
+            return "Warhammer 40,000";
+        }
+        return valorSeguroVista(formatoJuego);
+    }
+
     public record ListaGuardadaView(
             Long listaId,
             String nombreLista,
+            String formatoJuego,
             String faccion,
             String ejercito,
             Integer puntosActuales,
@@ -808,15 +855,21 @@ public class CreacionListasService {
     ) {
     }
 
-    public record MisListas40kView(
+    public record MisListasView(
             String nombreUsuario,
+            String formatoJuegoSeleccionado,
+            List<FormatoFiltroView> formatosDisponibles,
             List<ListaResumenView> listas
     ) {
+    }
+
+    public record FormatoFiltroView(String codigo, String nombre) {
     }
 
     public record ListaResumenView(
             Long listaId,
             String nombreLista,
+            String formatoJuego,
             String faccion,
             String ejercito,
             String puntos,

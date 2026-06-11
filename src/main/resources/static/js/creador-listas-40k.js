@@ -58,10 +58,26 @@
       puntos: boton.dataset.puntos || "",
       puntosBase: parseInt(boton.dataset.puntosBase || "0", 10),
       categoria: boton.dataset.categoria || "otros",
+      equipamientoResumen: crearResumenEquipamiento(boton.dataset.armas || ""),
       configuracionEstado: crearEstadoConfiguracion(
         parsearJsonSeguro(boton.dataset.configuracionJson, { gruposMiniaturas: [], opcionesComposicion: [] })
       )
     };
+  }
+
+  function crearResumenEquipamiento(texto) {
+    if (!texto) {
+      return [];
+    }
+
+    return texto
+      .split(",")
+      .map(function (parte) {
+        return parte.trim();
+      })
+      .filter(function (parte) {
+        return parte.length > 0 && parte !== "Sin armas registradas";
+      });
   }
 
   function crearSeleccionInicial(grupoEquipamiento) {
@@ -70,6 +86,14 @@
     const minimo = Math.max(grupoEquipamiento.minimo || 0, 0);
     if (opciones.length === 0 || maximo === 0) {
       return [];
+    }
+
+    const opcionPorDefecto = opciones.find(function (opcion) {
+      return opcion.seleccionPorDefecto;
+    });
+
+    if (maximo <= 1 && opcionPorDefecto) {
+      return [opcionPorDefecto.id];
     }
 
     const total = Math.min(opciones.length, Math.min(maximo, minimo));
@@ -184,12 +208,24 @@
         id: opcion.id || ("composicion-" + indice),
         nombre: opcion.nombre || "Composicion",
         puntos: opcion.puntos || 0,
+        seleccionPorDefecto: !!opcion.seleccionPorDefecto,
         gruposMiniaturas: crearGruposMiniaturasEstado(opcion.gruposMiniaturas || [])
       });
     }
 
+    let opcionSeleccionadaId = "";
+    for (let indice = 0; indice < opcionesComposicion.length; indice++) {
+      if (opcionesComposicion[indice].seleccionPorDefecto) {
+        opcionSeleccionadaId = opcionesComposicion[indice].id;
+        break;
+      }
+    }
+    if (!opcionSeleccionadaId && opcionesComposicion.length > 0) {
+      opcionSeleccionadaId = opcionesComposicion[0].id;
+    }
+
     return {
-      opcionSeleccionadaId: opcionesComposicion.length > 0 ? opcionesComposicion[0].id : "",
+      opcionSeleccionadaId: opcionSeleccionadaId,
       opcionesComposicion: opcionesComposicion,
       gruposMiniaturas: crearGruposMiniaturasEstado(
         (configuracionCatalogo && configuracionCatalogo.gruposMiniaturas) || []
@@ -258,6 +294,7 @@
     contenedor.dataset.identificador = "unidad-" + contadorUnidad;
     contenedor.dataset.categoria = datosUnidad.categoria;
     contenedor.dataset.notas = "";
+    contenedor.dataset.equipamientoResumen = JSON.stringify(datosUnidad.equipamientoResumen || []);
     contenedor.dataset.configuracionEstado = JSON.stringify(
       datosUnidad.configuracionEstado || { gruposMiniaturas: [], opcionesComposicion: [] }
     );
@@ -279,6 +316,7 @@
         puntos: contenedor.dataset.puntos || "",
         puntosBase: parseInt(contenedor.dataset.puntosBaseOriginal || contenedor.dataset.puntosBase || "0", 10),
         categoria: contenedor.dataset.categoria || "",
+        equipamientoResumen: parsearJsonSeguro(contenedor.dataset.equipamientoResumen, []),
         configuracionEstado: clonarDatos(
           parsearJsonSeguro(contenedor.dataset.configuracionEstado, { gruposMiniaturas: [], opcionesComposicion: [] })
         )
@@ -302,6 +340,7 @@
     bloque.appendChild(contenedor);
     actualizarPresentacionUnidad(contenedor);
   }
+
   function obtenerUnidadActiva() {
     if (!unidadActiva) {
       return null;
@@ -355,184 +394,352 @@
     );
 
     if ((configuracion.opcionesComposicion || []).length > 0) {
-      const fieldsetComposicion = document.createElement("fieldset");
-      const legendComposicion = document.createElement("legend");
-      legendComposicion.textContent = "Composicion de unidad";
-      fieldsetComposicion.appendChild(legendComposicion);
-
-      const opciones = configuracion.opcionesComposicion || [];
-      for (let indiceOpcion = 0; indiceOpcion < opciones.length; indiceOpcion++) {
-        const opcion = opciones[indiceOpcion];
-        const etiqueta = document.createElement("label");
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = contenedor.dataset.identificador + "-composicion";
-        input.value = opcion.id;
-        input.checked = opcion.id === configuracion.opcionSeleccionadaId;
-        input.addEventListener("change", function () {
-          cambiarComposicionUnidad(contenedor, opcion.id);
-        });
-        etiqueta.appendChild(input);
-        etiqueta.appendChild(document.createTextNode(" " + opcion.nombre + " (" + opcion.puntos + " pts)"));
-        fieldsetComposicion.appendChild(etiqueta);
-        fieldsetComposicion.appendChild(document.createElement("br"));
-      }
-
-      panel.appendChild(fieldsetComposicion);
+      panel.appendChild(renderizarSelectorComposicion(contenedor, configuracion));
     }
 
     const grupos = obtenerGruposActivos(configuracion);
     if (grupos.length === 0) {
-      const texto = document.createElement("p");
-      texto.textContent = "Esta unidad no expone equipamiento configurable en el catalogo cargado.";
-      panel.appendChild(texto);
+      const equipamientoResumen = parsearJsonSeguro(contenedor.dataset.equipamientoResumen, []);
+      if (equipamientoResumen.length > 0) {
+        panel.appendChild(renderizarListaEquipamiento("Equipamiento de la unidad", equipamientoResumen));
+      } else {
+        const texto = document.createElement("p");
+        texto.textContent = "Esta unidad no expone equipamiento configurable en el catalogo cargado.";
+        panel.appendChild(texto);
+      }
       return;
     }
 
     for (let indiceGrupo = 0; indiceGrupo < grupos.length; indiceGrupo++) {
-      panel.appendChild(renderizarGrupo(contenedor, grupos[indiceGrupo], [indiceGrupo]));
+      panel.appendChild(renderizarGrupoMiniaturas(contenedor, grupos[indiceGrupo], [indiceGrupo], 0));
     }
   }
 
-  function renderizarGrupo(contenedor, grupo, rutaGrupo) {
-    const bloqueGrupo = document.createElement("div");
-    const tituloGrupo = document.createElement("p");
-    tituloGrupo.innerHTML = "<strong>" + grupo.nombre + "</strong> (" + totalGrupoMiniaturas(grupo)
-      + " de " + grupo.minimo + "-" + grupo.maximo + ")";
-    bloqueGrupo.appendChild(tituloGrupo);
+  function renderizarSelectorComposicion(contenedor, configuracion) {
+    const bloque = document.createElement("div");
+    bloque.className = "config-card";
+
+    const titulo = document.createElement("p");
+    titulo.className = "config-card-title";
+    titulo.textContent = "Composicion de unidad";
+    bloque.appendChild(titulo);
+
+    const opciones = configuracion.opcionesComposicion || [];
+    for (let indice = 0; indice < opciones.length; indice++) {
+      const opcion = opciones[indice];
+      const fila = document.createElement("label");
+      fila.className = "choice-row";
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = contenedor.dataset.identificador + "-composicion";
+      radio.value = opcion.id;
+      radio.checked = opcion.id === configuracion.opcionSeleccionadaId;
+      radio.addEventListener("change", function () {
+        cambiarComposicionUnidad(contenedor, opcion.id);
+      });
+
+      const texto = document.createElement("span");
+      texto.textContent = opcion.nombre + " (" + opcion.puntos + " pts)";
+
+      fila.appendChild(radio);
+      fila.appendChild(texto);
+      bloque.appendChild(fila);
+    }
+
+    return bloque;
+  }
+
+  function renderizarGrupoMiniaturas(contenedor, grupo, rutaGrupo, nivel) {
+    const bloque = document.createElement("div");
+    bloque.className = "config-card config-group nivel-" + nivel;
+
+    const titulo = document.createElement("div");
+    titulo.className = "group-header";
+
+    const nombre = document.createElement("p");
+    nombre.className = "config-card-title";
+    nombre.textContent = grupo.nombre;
+
+    const resumen = document.createElement("span");
+    resumen.className = "group-count";
+    resumen.textContent = totalGrupoMiniaturas(grupo) + "/" + (grupo.maximo || 0);
+
+    titulo.appendChild(nombre);
+    titulo.appendChild(resumen);
+    bloque.appendChild(titulo);
 
     const modelos = grupo.modelos || [];
     for (let indiceModelo = 0; indiceModelo < modelos.length; indiceModelo++) {
-      bloqueGrupo.appendChild(renderizarModelo(contenedor, grupo, modelos[indiceModelo], rutaGrupo, indiceModelo));
+      bloque.appendChild(renderizarModeloMiniaturas(contenedor, grupo, modelos[indiceModelo], rutaGrupo, indiceModelo));
     }
 
     const subgrupos = grupo.subgrupos || [];
     for (let indiceSubgrupo = 0; indiceSubgrupo < subgrupos.length; indiceSubgrupo++) {
-      bloqueGrupo.appendChild(renderizarGrupo(contenedor, subgrupos[indiceSubgrupo], rutaGrupo.concat(indiceSubgrupo)));
+      bloque.appendChild(
+        renderizarGrupoMiniaturas(contenedor, subgrupos[indiceSubgrupo], rutaGrupo.concat(indiceSubgrupo), nivel + 1)
+      );
     }
 
-    return bloqueGrupo;
+    return bloque;
   }
 
-  function renderizarModelo(contenedor, grupo, modelo, rutaGrupo, indiceModelo) {
-    const bloqueModelo = document.createElement("div");
-    const cabeceraModelo = document.createElement("p");
+  function renderizarModeloMiniaturas(contenedor, grupo, modelo, rutaGrupo, indiceModelo) {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "model-card";
+
+    const cabecera = document.createElement("div");
+    cabecera.className = "model-header";
+
+    const info = document.createElement("div");
+    info.className = "model-info";
+
+    const nombre = document.createElement("p");
+    nombre.className = "model-name";
+    nombre.textContent = modelo.nombre;
+
+    const rango = document.createElement("p");
+    rango.className = "model-range";
+    rango.textContent = "Min " + (modelo.minimo || 0) + " · Max " + (modelo.maximo || 0);
+
+    info.appendChild(nombre);
+    info.appendChild(rango);
+
+    const controles = document.createElement("div");
+    controles.className = "count-controls";
+
     const botonMenos = document.createElement("button");
     botonMenos.type = "button";
+    botonMenos.className = "count-button";
     botonMenos.textContent = "-";
     botonMenos.disabled = !puedeQuitarInstancia(grupo, modelo);
     botonMenos.addEventListener("click", function () {
       quitarInstanciaModelo(contenedor, rutaGrupo, indiceModelo);
     });
 
+    const valor = document.createElement("span");
+    valor.className = "count-value";
+    valor.textContent = String((modelo.instancias || []).length);
+
     const botonMas = document.createElement("button");
     botonMas.type = "button";
+    botonMas.className = "count-button";
     botonMas.textContent = "+";
     botonMas.disabled = !puedeAnadirInstancia(grupo, modelo);
     botonMas.addEventListener("click", function () {
       anadirInstanciaModelo(contenedor, rutaGrupo, indiceModelo);
     });
 
-    cabeceraModelo.appendChild(document.createTextNode(modelo.nombre + " "));
-    cabeceraModelo.appendChild(botonMenos);
-    cabeceraModelo.appendChild(document.createTextNode(" " + (modelo.instancias || []).length + " "));
-    cabeceraModelo.appendChild(botonMas);
-    bloqueModelo.appendChild(cabeceraModelo);
+    controles.appendChild(botonMenos);
+    controles.appendChild(valor);
+    controles.appendChild(botonMas);
 
-    const instancias = modelo.instancias || [];
-    for (let indiceInstancia = 0; indiceInstancia < instancias.length; indiceInstancia++) {
-      bloqueModelo.appendChild(renderizarInstancia(contenedor, modelo, instancias[indiceInstancia], rutaGrupo, indiceModelo, indiceInstancia));
+    cabecera.appendChild(info);
+    cabecera.appendChild(controles);
+    tarjeta.appendChild(cabecera);
+
+    if ((modelo.instancias || []).length > 0) {
+      tarjeta.appendChild(renderizarDetalleModelo(contenedor, modelo, rutaGrupo, indiceModelo));
     }
 
-    return bloqueModelo;
+    return tarjeta;
   }
 
-  function renderizarInstancia(contenedor, modelo, instancia, rutaGrupo, indiceModelo, indiceInstancia) {
-    const bloqueInstancia = document.createElement("div");
-    const tituloInstancia = document.createElement("p");
-    tituloInstancia.textContent = modelo.nombre + " " + (indiceInstancia + 1);
-    bloqueInstancia.appendChild(tituloInstancia);
+  function renderizarDetalleModelo(contenedor, modelo, rutaGrupo, indiceModelo) {
+    const bloque = document.createElement("div");
+    bloque.className = "model-detail";
 
     if ((modelo.equipamientoFijo || []).length > 0) {
-      const fieldsetFijo = document.createElement("fieldset");
-      const legendFijo = document.createElement("legend");
-      legendFijo.textContent = "Equipamiento base";
-      fieldsetFijo.appendChild(legendFijo);
+      bloque.appendChild(renderizarListaEquipamiento("Equipamiento base", modelo.equipamientoFijo));
+    }
 
-      for (let indiceFijo = 0; indiceFijo < modelo.equipamientoFijo.length; indiceFijo++) {
-        const etiquetaFijo = document.createElement("label");
-        const checkFijo = document.createElement("input");
-        checkFijo.type = "checkbox";
-        checkFijo.checked = true;
-        checkFijo.disabled = true;
-        etiquetaFijo.appendChild(checkFijo);
-        etiquetaFijo.appendChild(document.createTextNode(" " + modelo.equipamientoFijo[indiceFijo]));
-        fieldsetFijo.appendChild(etiquetaFijo);
-        fieldsetFijo.appendChild(document.createElement("br"));
-      }
+    if ((modelo.gruposEquipamiento || []).length === 0) {
+      return bloque;
+    }
 
-      bloqueInstancia.appendChild(fieldsetFijo);
+    const instancias = modelo.instancias || [];
+    if (instancias.length === 1) {
+      bloque.appendChild(
+        renderizarEquipamientoInstancia(
+          contenedor,
+          modelo,
+          instancias[0],
+          rutaGrupo,
+          indiceModelo,
+          0,
+          ""
+        )
+      );
+      return bloque;
+    }
+
+    for (let indiceInstancia = 0; indiceInstancia < instancias.length; indiceInstancia++) {
+      bloque.appendChild(
+        renderizarEquipamientoInstancia(
+          contenedor,
+          modelo,
+          instancias[indiceInstancia],
+          rutaGrupo,
+          indiceModelo,
+          indiceInstancia,
+          modelo.nombre + " " + (indiceInstancia + 1)
+        )
+      );
+    }
+
+    return bloque;
+  }
+
+  function renderizarEquipamientoInstancia(contenedor, modelo, instancia, rutaGrupo, indiceModelo, indiceInstancia, tituloInstancia) {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "instance-card";
+
+    if (tituloInstancia) {
+      const titulo = document.createElement("p");
+      titulo.className = "instance-title";
+      titulo.textContent = tituloInstancia;
+      tarjeta.appendChild(titulo);
     }
 
     const gruposEquipamiento = modelo.gruposEquipamiento || [];
-    for (let indiceEquipamiento = 0; indiceEquipamiento < gruposEquipamiento.length; indiceEquipamiento++) {
-      const grupoEquipamiento = gruposEquipamiento[indiceEquipamiento];
-      const fieldset = document.createElement("fieldset");
-      const legend = document.createElement("legend");
-      legend.textContent = grupoEquipamiento.nombre + " (" + grupoEquipamiento.minimo + "-" + grupoEquipamiento.maximo + ")";
-      fieldset.appendChild(legend);
-
-      const seleccionActual = instancia.selecciones[grupoEquipamiento.id] || [];
-      const opciones = grupoEquipamiento.opciones || [];
-
-      if ((grupoEquipamiento.maximo || 0) <= 1 && (grupoEquipamiento.minimo || 0) === 0) {
-        const etiquetaNinguna = document.createElement("label");
-        const radioNinguno = document.createElement("input");
-        radioNinguno.type = "radio";
-        radioNinguno.name = contenedor.dataset.identificador + "-" + instancia.id + "-" + grupoEquipamiento.id;
-        radioNinguno.value = "";
-        radioNinguno.checked = seleccionActual.length === 0;
-        radioNinguno.addEventListener("change", function () {
-          cambiarSeleccionSimple(contenedor, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento.id, "");
-        });
-        etiquetaNinguna.appendChild(radioNinguno);
-        etiquetaNinguna.appendChild(document.createTextNode(" Sin elegir"));
-        fieldset.appendChild(etiquetaNinguna);
-        fieldset.appendChild(document.createElement("br"));
-      }
-
-      for (let indiceOpcion = 0; indiceOpcion < opciones.length; indiceOpcion++) {
-        const opcion = opciones[indiceOpcion];
-        const etiqueta = document.createElement("label");
-        const input = document.createElement("input");
-        input.name = contenedor.dataset.identificador + "-" + instancia.id + "-" + grupoEquipamiento.id;
-        input.value = opcion.id;
-
-        if ((grupoEquipamiento.maximo || 0) <= 1) {
-          input.type = "radio";
-          input.checked = seleccionActual.length > 0 && seleccionActual[0] === opcion.id;
-          input.addEventListener("change", function () {
-            cambiarSeleccionSimple(contenedor, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento.id, opcion.id);
-          });
-        } else {
-          input.type = "checkbox";
-          input.checked = seleccionActual.indexOf(opcion.id) >= 0;
-          input.disabled = !input.checked && seleccionActual.length >= grupoEquipamiento.maximo;
-          input.addEventListener("change", function () {
-            cambiarSeleccionMultiple(contenedor, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento.id, opcion.id, input.checked);
-          });
-        }
-
-        etiqueta.appendChild(input);
-        etiqueta.appendChild(document.createTextNode(" " + opcion.nombre));
-        fieldset.appendChild(etiqueta);
-        fieldset.appendChild(document.createElement("br"));
-      }
-
-      bloqueInstancia.appendChild(fieldset);
+    for (let indiceGrupo = 0; indiceGrupo < gruposEquipamiento.length; indiceGrupo++) {
+      tarjeta.appendChild(
+        renderizarGrupoEquipamiento(
+          contenedor,
+          instancia,
+          rutaGrupo,
+          indiceModelo,
+          indiceInstancia,
+          gruposEquipamiento[indiceGrupo]
+        )
+      );
     }
 
-    return bloqueInstancia;
+    return tarjeta;
+  }
+
+  function renderizarGrupoEquipamiento(contenedor, instancia, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento) {
+    const bloque = document.createElement("div");
+    bloque.className = "choice-card";
+
+    const titulo = document.createElement("div");
+    titulo.className = "choice-header";
+
+    const nombre = document.createElement("p");
+    nombre.className = "choice-title";
+    nombre.textContent = grupoEquipamiento.nombre;
+
+    const seleccionActual = instancia.selecciones[grupoEquipamiento.id] || [];
+    const resumen = document.createElement("span");
+    resumen.className = "choice-count";
+    resumen.textContent = seleccionActual.length + "/" + (grupoEquipamiento.maximo || 0);
+
+    titulo.appendChild(nombre);
+    titulo.appendChild(resumen);
+    bloque.appendChild(titulo);
+
+    if ((grupoEquipamiento.maximo || 0) <= 1 && (grupoEquipamiento.minimo || 0) === 0) {
+      const filaNinguna = document.createElement("label");
+      filaNinguna.className = "choice-row";
+
+      const radioNinguno = document.createElement("input");
+      radioNinguno.type = "radio";
+      radioNinguno.name = contenedor.dataset.identificador + "-" + instancia.id + "-" + grupoEquipamiento.id;
+      radioNinguno.value = "";
+      radioNinguno.checked = seleccionActual.length === 0;
+      radioNinguno.addEventListener("change", function () {
+        cambiarSeleccionSimple(contenedor, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento.id, "");
+      });
+
+      const textoNinguno = document.createElement("span");
+      textoNinguno.textContent = "Sin elegir";
+
+      filaNinguna.appendChild(radioNinguno);
+      filaNinguna.appendChild(textoNinguno);
+      bloque.appendChild(filaNinguna);
+    }
+
+    const opciones = grupoEquipamiento.opciones || [];
+    for (let indiceOpcion = 0; indiceOpcion < opciones.length; indiceOpcion++) {
+      const opcion = opciones[indiceOpcion];
+      const fila = document.createElement("label");
+      fila.className = "choice-row";
+
+      const input = document.createElement("input");
+      input.name = contenedor.dataset.identificador + "-" + instancia.id + "-" + grupoEquipamiento.id;
+      input.value = opcion.id;
+
+      if ((grupoEquipamiento.maximo || 0) <= 1) {
+        input.type = "radio";
+        input.checked = seleccionActual.length > 0 && seleccionActual[0] === opcion.id;
+        input.addEventListener("change", function () {
+          cambiarSeleccionSimple(contenedor, rutaGrupo, indiceModelo, indiceInstancia, grupoEquipamiento.id, opcion.id);
+        });
+      } else {
+        input.type = "checkbox";
+        input.checked = seleccionActual.indexOf(opcion.id) >= 0;
+        input.disabled = !input.checked && seleccionActual.length >= grupoEquipamiento.maximo;
+        input.addEventListener("change", function () {
+          cambiarSeleccionMultiple(
+            contenedor,
+            rutaGrupo,
+            indiceModelo,
+            indiceInstancia,
+            grupoEquipamiento.id,
+            opcion.id,
+            input.checked
+          );
+        });
+      }
+
+      const texto = document.createElement("span");
+      texto.textContent = opcion.nombre;
+
+      fila.appendChild(input);
+      fila.appendChild(texto);
+      bloque.appendChild(fila);
+
+      if (input.checked && (opcion.detalleEquipamiento || []).length > 0) {
+        bloque.appendChild(renderizarListaEquipamiento("", opcion.detalleEquipamiento));
+      }
+    }
+
+    return bloque;
+  }
+
+  function renderizarListaEquipamiento(titulo, elementos) {
+    const bloque = document.createElement("div");
+    bloque.className = "gear-list";
+
+    if (titulo) {
+      const nombre = document.createElement("p");
+      nombre.className = "gear-title";
+      nombre.textContent = titulo;
+      bloque.appendChild(nombre);
+    }
+
+    const lista = document.createElement("div");
+    lista.className = "gear-items";
+
+    for (let indice = 0; indice < elementos.length; indice++) {
+      const fila = document.createElement("label");
+      fila.className = "gear-item";
+
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = true;
+      check.disabled = true;
+
+      const texto = document.createElement("span");
+      texto.textContent = elementos[indice];
+
+      fila.appendChild(check);
+      fila.appendChild(texto);
+      lista.appendChild(fila);
+    }
+
+    bloque.appendChild(lista);
+    return bloque;
   }
 
   function obtenerGrupoPorRuta(grupos, ruta) {
