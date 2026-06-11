@@ -23,6 +23,12 @@ public class LoginController {
         return "index";
     }
 
+    @PostMapping("/logout")
+    public String cerrarSesion(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
+
     @PostMapping("/login")
     public String iniciarSesion(
             @RequestParam("usuario") String usuarioOEmail,
@@ -35,6 +41,7 @@ public class LoginController {
 
             session.setAttribute("usuarioId", usuarioEncontrado.getId());
             session.setAttribute("nombreUsuario", usuarioEncontrado.getNombreUsuario());
+            session.setAttribute("fotoUrl", usuarioEncontrado.getFotoUrl());
             session.setAttribute("rol", usuarioEncontrado.getRol());
 
             return "redirect:/menu-principal";
@@ -57,6 +64,7 @@ public class LoginController {
 
             session.setAttribute("usuarioId", usuarioRegistrado.getId());
             session.setAttribute("nombreUsuario", usuarioRegistrado.getNombreUsuario());
+            session.setAttribute("fotoUrl", usuarioRegistrado.getFotoUrl());
             session.setAttribute("rol", usuarioRegistrado.getRol());
 
             return "redirect:/menu-principal";

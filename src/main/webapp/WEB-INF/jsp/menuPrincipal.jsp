@@ -140,6 +140,53 @@
         margin-top: 14px;
       }
 
+      .profile-bar-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+      }
+
+      .profile-shortcut {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel-soft);
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .profile-shortcut:hover {
+        border-color: rgba(116, 159, 224, 0.8);
+      }
+
+      .profile-shortcut-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        background: rgba(14, 22, 34, 0.72);
+      }
+
+      .profile-shortcut-copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .profile-shortcut-copy .profile-title,
+      .profile-shortcut-copy .profile-role {
+        margin: 0;
+      }
+
+      .logout-form {
+        margin: 0;
+      }
+
       .linea {
         margin-top: 14px;
       }
@@ -159,22 +206,31 @@
   <body>
     <c:set var="sidebarActive" value="menu" />
     <c:set var="sidebarComunidadesEnabled" value="true" />
+    <c:set var="fotoPerfilMenu" value="${empty sessionScope.fotoUrl ? '/images/default-avatar.svg' : sessionScope.fotoUrl}" />
     <div class="app-shell">
       <jsp:include page="header.jsp" />
 
       <div class="app-main">
         <header class="profile-bar">
-          <div class="profile-card">
-            <p class="profile-title">Mi perfil</p>
-            <p class="profile-role"><c:out value="${menuPrincipal.nombreUsuario}" /></p>
+          <div class="profile-bar-actions">
+            <a class="profile-shortcut" href="/ajustes" aria-label="Ir a ajustes de perfil">
+              <img class="profile-shortcut-avatar" src="<c:out value='${fotoPerfilMenu}' />" alt="Foto de perfil" />
+              <div class="profile-shortcut-copy">
+                <p class="profile-title">Mi perfil</p>
+                <p class="profile-role"><c:out value="${menuPrincipal.nombreUsuario}" /></p>
+              </div>
+            </a>
+
+            <form class="logout-form" method="post" action="/logout">
+              <button class="button-secondary" type="submit">Cerrar sesion</button>
+            </form>
           </div>
         </header>
 
         <main class="page-content">
           <section class="page-panel">
             <div class="page-header">
-              <h2 class="page-title">Panel principal</h2>
-              <p class="page-subtitle">Bienvenido, <c:out value="${menuPrincipal.nombreUsuario}" />. Desde aqui puedes entrar al catalogo y gestionar tus listas.</p>
+              <h2 class="page-subtitle">Bienvenido, <c:out value="${menuPrincipal.nombreUsuario}" />.</h2>
             </div>
 
             <c:if test="${not empty menuPrincipal.errorCatalogo}">
@@ -219,25 +275,6 @@
                     <a class="button-secondary" href="/comunidades">Abrir comunidades</a>
                   </div>
                 </article>
-              </div>
-            </div>
-
-            <div class="stats-strip">
-              <div class="stat-card">
-                <p class="stat-value"><c:out value="${menuPrincipal.facciones.size()}" /></p>
-                <p class="stat-label">Facciones cargadas</p>
-              </div>
-              <div class="stat-card">
-                <p class="stat-value">40k</p>
-                <p class="stat-label">Sistema disponible</p>
-              </div>
-              <div class="stat-card">
-                <p class="stat-value">3</p>
-                <p class="stat-label">Secciones activas</p>
-              </div>
-              <div class="stat-card">
-                <p class="stat-value">0</p>
-                <p class="stat-label">Partidas registradas</p>
               </div>
             </div>
           </section>

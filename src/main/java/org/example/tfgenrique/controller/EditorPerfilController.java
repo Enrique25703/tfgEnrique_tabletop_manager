@@ -58,6 +58,7 @@ public class EditorPerfilController {
                     )
             );
             session.setAttribute("nombreUsuario", perfilActualizado.nombreUsuario());
+            session.setAttribute("fotoUrl", perfilActualizado.fotoUrl());
             redirectAttributes.addFlashAttribute("mensajeOk", "Perfil actualizado correctamente.");
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
