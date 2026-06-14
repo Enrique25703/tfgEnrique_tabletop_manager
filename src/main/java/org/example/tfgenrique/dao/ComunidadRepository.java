@@ -13,5 +13,7 @@ public interface ComunidadRepository extends JpaRepository<Comunidad, Long> {
 
     Optional<Comunidad> findByIdAndActivoTrue(Long id);
 
+    Optional<Comunidad> findByNombreIgnoreCase(String nombre);
+
     boolean existsByNombreIgnoreCase(String nombre);
 }

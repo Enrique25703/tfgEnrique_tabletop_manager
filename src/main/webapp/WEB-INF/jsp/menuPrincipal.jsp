@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!doctype html>
 <html lang="es">
   <head>
@@ -50,6 +51,12 @@
         min-height: 170px;
         background: rgba(28, 20, 39, 0.92);
         border-color: rgba(111, 92, 146, 0.28);
+      }
+
+      .feature-card.admin {
+        min-height: 170px;
+        background: rgba(39, 20, 20, 0.92);
+        border-color: rgba(180, 94, 94, 0.3);
       }
 
       .card-kicker {
@@ -275,6 +282,17 @@
                     <a class="button-secondary" href="/comunidades">Abrir comunidades</a>
                   </div>
                 </article>
+
+                <c:if test="${not empty sessionScope.rol and fn:toUpperCase(sessionScope.rol) eq 'ADMIN'}">
+                  <article class="feature-card admin">
+                    <p class="card-kicker">Administracion</p>
+                    <h3 class="card-title">ADMIN</h3>
+                    <p class="card-copy">Gestiona usuarios, comunidades y miembros desde el panel administrativo.</p>
+                    <div class="card-actions">
+                      <a class="button-secondary" href="/admin">Abrir panel</a>
+                    </div>
+                  </article>
+                </c:if>
               </div>
             </div>
           </section>

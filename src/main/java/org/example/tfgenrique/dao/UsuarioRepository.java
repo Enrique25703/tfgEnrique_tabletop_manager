@@ -4,6 +4,7 @@ import org.example.tfgenrique.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -12,5 +13,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // solo por nombre de usuario o solo por email.
     Optional<Usuario> findByNombreUsuario(String nombreUsuario);
 
+    Optional<Usuario> findByNombreUsuarioIgnoreCase(String nombreUsuario);
+
     Optional<Usuario> findByEmail(String email);
+
+    Optional<Usuario> findByEmailIgnoreCase(String email);
+
+    List<Usuario> findAllByActivoTrueOrderByNombreUsuarioAsc();
 }
