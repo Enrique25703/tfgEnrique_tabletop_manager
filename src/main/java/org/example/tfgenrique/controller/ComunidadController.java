@@ -37,7 +37,7 @@ public class ComunidadController {
 
         ComunidadPaginaView comunidades = comunidadService.prepararPagina(usuarioId, comunidadId);
         model.addAttribute("comunidades", comunidades);
-        return "comunidades";
+        return "comunity_events/comunidades";
     }
 
     @PostMapping("/comunidades/crear")
@@ -90,6 +90,8 @@ public class ComunidadController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fecha,
             @RequestParam("numeroRondas") Integer numeroRondas,
             @RequestParam("lugar") String lugar,
+            @RequestParam("latitud") Double latitud,
+            @RequestParam("longitud") Double longitud,
             @RequestParam("formatoJuego") String formatoJuego,
             RedirectAttributes redirectAttributes
     ) {
@@ -102,6 +104,8 @@ public class ComunidadController {
         request.setFecha(fecha);
         request.setNumeroRondas(numeroRondas);
         request.setLugar(lugar);
+        request.setLatitud(latitud);
+        request.setLongitud(longitud);
         request.setFormatoJuego(formatoJuego);
 
         try {

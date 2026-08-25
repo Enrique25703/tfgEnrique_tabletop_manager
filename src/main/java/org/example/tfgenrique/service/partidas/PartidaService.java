@@ -1,5 +1,10 @@
 package org.example.tfgenrique.service.partidas;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.example.tfgenrique.dao.PartidaRepository;
 import org.example.tfgenrique.dao.RondaPartidaRepository;
 import org.example.tfgenrique.dao.SistemaJuegoRepository;
@@ -8,19 +13,14 @@ import org.example.tfgenrique.entity.Partida;
 import org.example.tfgenrique.entity.RondaPartida;
 import org.example.tfgenrique.entity.SistemaJuego;
 import org.example.tfgenrique.entity.Usuario;
-import org.example.tfgenrique.service.Catalogo40kService;
 import org.example.tfgenrique.service.CreacionListasService;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @Service
 public class PartidaService {
-    private static final String FORMATO_40K = "WH40K_10";
+    private static final String FORMATO_40K = "WH40K_11";
     private static final String ESTILO_EQUILIBRADO = "EQUILIBRADO";
     private static final String ESTILO_ASIMETRICO = "ASIMETRICO";
     private static final String ESTADO_CREADA = "CREADA";
@@ -393,7 +393,7 @@ public class PartidaService {
         SistemaJuego nuevo = new SistemaJuego();
         nuevo.setCodigo(codigo);
         nuevo.setNombre("Warhammer 40.000");
-        nuevo.setEdicion("10a edicion");
+        nuevo.setEdicion("11a edicion");
         nuevo.setActivo(true);
         nuevo.setCreadoEn(LocalDateTime.now());
         return sistemaJuegoRepository.save(nuevo);

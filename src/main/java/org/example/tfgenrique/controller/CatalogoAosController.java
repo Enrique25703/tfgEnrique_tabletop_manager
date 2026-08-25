@@ -1,15 +1,16 @@
 package org.example.tfgenrique.controller;
 
 import jakarta.servlet.http.HttpSession;
-import org.example.tfgenrique.service.CatalogoAosService;
-import org.example.tfgenrique.service.CatalogoAosService.Catalogo40kData;
-import org.example.tfgenrique.service.CatalogoAosService.Catalogo40kPaginaView;
-import org.example.tfgenrique.service.CatalogoAosService.InfoUnidad40kView;
-import org.example.tfgenrique.service.CatalogoAosService.Unidad40k;
+
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.CreacionListasService.CreadorLista40kView;
 import org.example.tfgenrique.service.CreacionListasService.GuardadoListaResultado;
 import org.example.tfgenrique.service.CreacionListasService.GuardarListaRequest;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService.Catalogo40kData;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService.Catalogo40kPaginaView;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService.InfoUnidad40kView;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService.Unidad40k;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,7 +53,7 @@ public class CatalogoAosController {
                 errorCatalogo
         );
         model.addAttribute("paginaCatalogoAos", paginaCatalogo);
-        return "catalogoAos";
+        return "catalogos/catalogoAos";
     }
 
     @GetMapping("/infoUnidadAos")
@@ -74,7 +75,7 @@ public class CatalogoAosController {
 
         InfoUnidad40kView infoUnidad = catalogoAosService.prepararInfoUnidad(faccion, ejercito, unidadEncontrada);
         model.addAttribute("infoUnidadAos", infoUnidad);
-        return "infoUnidadAos";
+        return "catalogos/infoUnidadAos";
     }
 
     @GetMapping("/creador-listas-aos")
@@ -84,6 +85,7 @@ public class CatalogoAosController {
             @RequestParam("faccion") String faccion,
             @RequestParam("ejercito") String ejercito,
             @RequestParam("nombreLista") String nombreLista,
+            @RequestParam(value = "limitePuntos", defaultValue = "2000") Integer limitePuntos,
             Model model
     ) {
         if (session.getAttribute("nombreUsuario") == null) {
@@ -101,11 +103,12 @@ public class CatalogoAosController {
                 faccion,
                 ejercito,
                 nombreLista,
+                limitePuntos,
                 ejercitoSeleccionado
         );
 
         model.addAttribute("creadorListaAos", creadorLista);
-        return "creadorListasAos";
+        return "listas/creadorListasAos";
     }
 
     @PostMapping("/creador-listas-aos/guardar")

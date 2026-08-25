@@ -9,10 +9,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "listas_ejercito")
+@Table(
+        name = "listas_ejercito",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_listas_ejercito_propietario_sistema_nombre",
+                columnNames = {"propietario_usuario_id", "sistema_juego_id", "nombre"}
+        )
+)
 public class ListaEjercito {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

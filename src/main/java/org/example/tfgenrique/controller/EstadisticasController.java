@@ -28,7 +28,7 @@ public class EstadisticasController {
         }
 
         model.addAttribute("estadisticas", estadisticasService.prepararEstadisticas(usuarioId, juego));
-        return "estadisticas";
+        return "infoUser/estadisticas";
     }
 
     private Long obtenerUsuarioId(HttpSession session) {

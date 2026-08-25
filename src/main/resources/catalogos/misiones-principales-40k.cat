@@ -1,6 +1,6 @@
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<catalogoMisiones juego="WH40K_10" nombre="Misiones Primarias Warhammer 40k 2025">
+<catalogoMisiones juego="WH40K_11" nombre="Misiones Primarias Warhammer 40k 2025">
 
     <misionesPrimarias>
 

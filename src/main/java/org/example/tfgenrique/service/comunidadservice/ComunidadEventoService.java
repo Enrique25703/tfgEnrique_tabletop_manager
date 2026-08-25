@@ -12,6 +12,7 @@ import org.example.tfgenrique.entity.Usuario;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -52,6 +53,8 @@ public class ComunidadEventoService {
         Integer rondas = request.getNumeroRondas();
         String lugar = normalizarTexto(request.getLugar());
         String formatoJuego = normalizarTexto(request.getFormatoJuego());
+        Double latitud = request.getLatitud();
+        Double longitud = request.getLongitud();
 
         if (fecha == null) {
             throw new IllegalArgumentException("Debes indicar una fecha para el evento.");
@@ -61,6 +64,9 @@ public class ComunidadEventoService {
         }
         if (lugar.isBlank()) {
             throw new IllegalArgumentException("Debes indicar un lugar para el evento.");
+        }
+        if (latitud == null || longitud == null) {
+            throw new IllegalArgumentException("Debes seleccionar la ubicacion del evento en el mapa.");
         }
         if (formatoJuego.isBlank()) {
             throw new IllegalArgumentException("Debes indicar un formato de juego.");
@@ -80,6 +86,8 @@ public class ComunidadEventoService {
         evento.setRondasPlanificadas(rondas);
         evento.setMaxParticipantes(null);
         evento.setUbicacion(lugar);
+        evento.setLatitud(BigDecimal.valueOf(latitud));
+        evento.setLongitud(BigDecimal.valueOf(longitud));
         evento.setCiudad(null);
         evento.setFechaLimiteInscripcion(fecha);
         evento.setInicioEn(fecha);
@@ -122,6 +130,14 @@ public class ComunidadEventoService {
         return eventoRepository.findByComunidadOrderByInicioEnAsc(comunidad);
     }
 
+    public Evento buscarEvento(Long eventoId) {
+        if (eventoId == null) {
+            throw new IllegalArgumentException("Debes seleccionar un evento.");
+        }
+        return eventoRepository.findById(eventoId)
+                .orElseThrow(() -> new IllegalArgumentException("No se ha encontrado el evento."));
+    }
+
     public boolean usuarioInscrito(Evento evento, Usuario usuario) {
         return inscripcionEventoRepository.existsByEventoAndUsuario(evento, usuario);
     }
@@ -132,7 +148,7 @@ public class ComunidadEventoService {
 
     public String obtenerNombreFormato(String formatoJuego) {
         if (ComunidadConstantes.FORMATO_40K.equals(formatoJuego)) {
-            return "Warhammer 40.000 10a edicion";
+            return "Warhammer 40.000 11a edicion";
         }
         if (ComunidadConstantes.FORMATO_AOS.equals(formatoJuego)) {
             return "Age of Sigmar 4a edicion";
@@ -158,7 +174,7 @@ public class ComunidadEventoService {
 
     private String obtenerEdicionFormato(String formatoJuego) {
         if (ComunidadConstantes.FORMATO_40K.equals(formatoJuego)) {
-            return "10a edicion";
+            return "11a edicion";
         }
         if (ComunidadConstantes.FORMATO_AOS.equals(formatoJuego)) {
             return "4a edicion";

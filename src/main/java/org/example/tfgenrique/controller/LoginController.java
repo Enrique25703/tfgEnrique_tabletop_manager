@@ -1,13 +1,14 @@
 package org.example.tfgenrique.controller;
 
-import jakarta.servlet.http.HttpSession;
 import org.example.tfgenrique.entity.Usuario;
-import org.example.tfgenrique.service.LoginService;
+import org.example.tfgenrique.service.user.LoginService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class LoginController {
@@ -20,7 +21,7 @@ public class LoginController {
 
     @GetMapping("/")
     public String mostrarLogin() {
-        return "index";
+        return "login/index";
     }
 
     @PostMapping("/logout")
@@ -47,7 +48,7 @@ public class LoginController {
             return "redirect:/menu-principal";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
-            return "index";
+            return "login/index";
         }
     }
 
@@ -70,7 +71,7 @@ public class LoginController {
             return "redirect:/menu-principal";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
-            return "index";
+            return "login/index";
         }
     }
 }

@@ -62,6 +62,8 @@ CREATE TABLE `eventos` (
   `rondas_planificadas` INT DEFAULT NULL,
   `max_participantes` INT DEFAULT NULL,
   `ubicacion` VARCHAR(150) DEFAULT NULL,
+  `latitud` DECIMAL(10,7) DEFAULT NULL,
+  `longitud` DECIMAL(10,7) DEFAULT NULL,
   `ciudad` VARCHAR(80) DEFAULT NULL,
   `fecha_limite_inscripcion` DATETIME DEFAULT NULL,
   `inicio_en` DATETIME NOT NULL,
@@ -111,6 +113,7 @@ CREATE TABLE `listas_ejercito` (
   `creado_en` DATETIME NOT NULL,
   `actualizado_en` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_listas_ejercito_propietario_sistema_nombre` (`propietario_usuario_id`, `sistema_juego_id`, `nombre`),
   KEY `idx_listas_ejercito_propietario_usuario` (`propietario_usuario_id`),
   KEY `idx_listas_ejercito_sistema_juego` (`sistema_juego_id`),
   CONSTRAINT `fk_listas_ejercito_propietario_usuario`
@@ -340,12 +343,42 @@ CREATE TABLE `rondas_partida` (
     FOREIGN KEY (`jugador_con_prioridad_id`) REFERENCES `usuarios` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `notificaciones_usuario` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `receptor_usuario_id` BIGINT NOT NULL,
+  `emisor_usuario_id` BIGINT DEFAULT NULL,
+  `comunidad_id` BIGINT DEFAULT NULL,
+  `evento_id` BIGINT DEFAULT NULL,
+  `partida_id` BIGINT DEFAULT NULL,
+  `tipo` VARCHAR(40) NOT NULL,
+  `estado` VARCHAR(20) NOT NULL,
+  `mensaje_extra` VARCHAR(255) DEFAULT NULL,
+  `creado_en` DATETIME NOT NULL,
+  `respondido_en` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_notificaciones_receptor` (`receptor_usuario_id`),
+  KEY `idx_notificaciones_emisor` (`emisor_usuario_id`),
+  KEY `idx_notificaciones_comunidad` (`comunidad_id`),
+  KEY `idx_notificaciones_evento` (`evento_id`),
+  KEY `idx_notificaciones_partida` (`partida_id`),
+  CONSTRAINT `fk_notificaciones_receptor_usuario`
+    FOREIGN KEY (`receptor_usuario_id`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `fk_notificaciones_emisor_usuario`
+    FOREIGN KEY (`emisor_usuario_id`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `fk_notificaciones_comunidad`
+    FOREIGN KEY (`comunidad_id`) REFERENCES `comunidades` (`id`),
+  CONSTRAINT `fk_notificaciones_evento`
+    FOREIGN KEY (`evento_id`) REFERENCES `eventos` (`id`),
+  CONSTRAINT `fk_notificaciones_partida`
+    FOREIGN KEY (`partida_id`) REFERENCES `partidas` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------------------
 -- Datos semilla minimos
 -- ---------------------------------------------------------------------------
 
 INSERT INTO `sistemas_juego` (`codigo`, `nombre`, `edicion`, `activo`, `creado_en`) VALUES
-  ('WH40K_10', 'Warhammer 40,000', '10a edicion', 1, NOW()),
+  ('WH40K_11', 'Warhammer 40,000', '11a edicion', 1, NOW()),
   ('AOS_4', 'Age of Sigmar', '4a edicion', 1, NOW());
 
 INSERT INTO `fuentes_catalogo` (
@@ -357,9 +390,9 @@ INSERT INTO `fuentes_catalogo` (
   `activo`,
   `creado_en`
 )
-SELECT `id`, 'BSData', 'GIT', 'https://github.com/BSData/wh40k-10e', 'main', 1, NOW()
+SELECT `id`, 'BSData', 'GIT', 'https://github.com/BSData/wh40k-11e', 'main', 1, NOW()
 FROM `sistemas_juego`
-WHERE `codigo` = 'WH40K_10';
+WHERE `codigo` = 'WH40K_11';
 
 INSERT INTO `fuentes_catalogo` (
   `sistema_juego_id`,

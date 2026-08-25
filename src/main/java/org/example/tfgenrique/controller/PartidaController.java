@@ -31,7 +31,7 @@ public class PartidaController {
         }
 
         model.addAttribute("partidaNueva", partidaService.prepararNuevaPartida(usuarioId));
-        return "partidaNueva";
+        return "partidas/partidaNueva";
     }
 
     @PostMapping("/partidas/crear")
@@ -67,7 +67,7 @@ public class PartidaController {
         }
 
         model.addAttribute("jugadores", partidaService.prepararJugadores(usuarioId, partidaId));
-        return "partidaJugadores";
+        return "partidas/partidaJugadores";
     }
 
     @PostMapping("/partidas/{partidaId}/jugadores")
@@ -121,7 +121,7 @@ public class PartidaController {
         }
 
         model.addAttribute("configuracion", partidaService.prepararConfiguracion(usuarioId, partidaId));
-        return "partidaConfiguracion";
+        return "partidas/partidaConfiguracion";
     }
 
     @PostMapping("/partidas/{partidaId}/configuracion")
@@ -176,7 +176,7 @@ public class PartidaController {
         }
 
         model.addAttribute("ronda", partidaService.prepararRonda(usuarioId, partidaId, numeroRonda));
-        return "partidaRonda";
+        return "partidas/partidaRonda";
     }
 
     @PostMapping("/partidas/{partidaId}/ronda/{numeroRonda}")
@@ -212,7 +212,7 @@ public class PartidaController {
         }
 
         model.addAttribute("finalPartida", partidaService.prepararFinal(usuarioId, partidaId));
-        return "partidaFinal";
+        return "partidas/partidaFinal";
     }
 
     @PostMapping("/partidas/{partidaId}/finalizar")

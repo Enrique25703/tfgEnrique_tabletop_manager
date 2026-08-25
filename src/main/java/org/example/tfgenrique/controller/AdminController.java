@@ -42,7 +42,7 @@ public class AdminController {
                     buscarComunidad,
                     comunidadId
             ));
-            return "admin";
+            return "infoUser/admin";
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
             return "redirect:/menu-principal";

@@ -1,10 +1,10 @@
 package org.example.tfgenrique.controller;
 
-import org.example.tfgenrique.service.Catalogo40kService;
-import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData;
-import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kPaginaView;
-import org.example.tfgenrique.service.Catalogo40kService.InfoUnidad40kView;
-import org.example.tfgenrique.service.Catalogo40kService.Unidad40k;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Catalogo40kData;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Catalogo40kPaginaView;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.InfoUnidad40kView;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Unidad40k;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +20,7 @@ public class Catalogo40kController {
 
     @GetMapping("/catalogos")
     public String mostrarSelectorCatalogos() {
-        return "selectorCatalogos";
+        return "catalogos/selectorCatalogos";
     }
 
     @GetMapping("/catalogo40k")
@@ -45,7 +45,7 @@ public class Catalogo40kController {
                 errorCatalogo
         );
         model.addAttribute("paginaCatalogo", paginaCatalogo);
-        return "catalogo40k";
+        return "catalogos/catalogo40k";
     }
 
     @GetMapping("/infoUnidad40k")
@@ -67,6 +67,6 @@ public class Catalogo40kController {
 
         InfoUnidad40kView infoUnidad = catalogo40kService.prepararInfoUnidad(faccion, ejercito, unidadEncontrada);
         model.addAttribute("infoUnidad", infoUnidad);
-        return "infoUnidad40k";
+        return "catalogos/infoUnidad40k";
     }
 }

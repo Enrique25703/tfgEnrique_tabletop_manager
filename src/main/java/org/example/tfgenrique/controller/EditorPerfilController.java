@@ -1,14 +1,15 @@
 package org.example.tfgenrique.controller;
 
-import jakarta.servlet.http.HttpSession;
-import org.example.tfgenrique.service.EditorPerfilService;
-import org.example.tfgenrique.service.EditorPerfilService.PerfilRequest;
+import org.example.tfgenrique.service.user.EditorPerfilService;
+import org.example.tfgenrique.service.user.EditorPerfilService.PerfilRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class EditorPerfilController {
@@ -26,7 +27,7 @@ public class EditorPerfilController {
         }
 
         model.addAttribute("perfil", editorPerfilService.prepararPerfil(usuarioId));
-        return "ajustes";
+        return "infoUser/ajustes";
     }
 
     @PostMapping("/ajustes/perfil")

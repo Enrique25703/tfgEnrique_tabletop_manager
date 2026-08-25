@@ -18,7 +18,7 @@ import java.util.Map;
 
 @Service
 public class EstadisticasService {
-    private static final String FORMATO_40K = "WH40K_10";
+    private static final String FORMATO_40K = "WH40K_11";
     private static final String FORMATO_AOS = "AOS_4";
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final List<String> COLORES = List.of(

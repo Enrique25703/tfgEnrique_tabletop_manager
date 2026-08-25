@@ -1,14 +1,14 @@
 package org.example.tfgenrique.controller;
 
 import jakarta.servlet.http.HttpSession;
-import org.example.tfgenrique.service.CatalogoAosService;
-import org.example.tfgenrique.service.Catalogo40kService;
-import org.example.tfgenrique.service.Catalogo40kService.Catalogo40kData;
-import org.example.tfgenrique.service.Catalogo40kService.Ejercito40k;
-import org.example.tfgenrique.service.Catalogo40kService.MenuPrincipalView;
+
 import org.example.tfgenrique.service.CreacionListasService.CreadorLista40kView;
 import org.example.tfgenrique.service.CreacionListasService.DetalleLista40kView;
 import org.example.tfgenrique.service.CreacionListasService.MisListasView;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Catalogo40kData;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.MenuPrincipalView;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.CreacionListasService.GuardadoListaResultado;
 import org.example.tfgenrique.service.CreacionListasService.GuardarListaRequest;
@@ -74,16 +74,17 @@ public class MenuPrincipalController {
         );
         model.addAttribute("menuPrincipal", menuPrincipal);
         model.addAttribute("menuPrincipalAos", menuPrincipalAos);
-        return "menuPrincipal";
+        return "menu/menuPrincipal";
     }
 
     @GetMapping("/creador-listas-40k")
     public String mostrarCreadorListas40k(
             HttpSession session,
-            @RequestParam(value = "formatoJuego", defaultValue = "WH40K_10") String formatoJuego,
+            @RequestParam(value = "formatoJuego", defaultValue = "WH40K_11") String formatoJuego,
             @RequestParam("faccion") String faccion,
             @RequestParam("ejercito") String ejercito,
             @RequestParam("nombreLista") String nombreLista,
+            @RequestParam(value = "limitePuntos", defaultValue = "2000") Integer limitePuntos,
             Model model
     ) {
         if (session.getAttribute("nombreUsuario") == null) {
@@ -95,17 +96,17 @@ public class MenuPrincipalController {
             catalogo = catalogo40kService.actualizarCatalogo();
         }
 
-        Ejercito40k ejercitoSeleccionado = catalogo.buscarEjercito(faccion, ejercito);
         CreadorLista40kView creadorLista = creacionListasService.prepararCreadorLista40k(
                 formatoJuego,
                 faccion,
                 ejercito,
                 nombreLista,
-                ejercitoSeleccionado
+                limitePuntos,
+                catalogo
         );
 
         model.addAttribute("creadorLista", creadorLista);
-        return "creadorListas40k";
+        return "listas/creadorListas40k";
     }
 
     @GetMapping("/mis-listas-40k")
@@ -131,7 +132,7 @@ public class MenuPrincipalController {
                 formatoJuego
         );
         model.addAttribute("misListas", misListas);
-        return "misListas";
+        return "listas/misListas";
     }
 
     @GetMapping("/mi-lista-40k")
@@ -148,7 +149,7 @@ public class MenuPrincipalController {
         ListaGuardadaView lista = creacionListasService.obtenerListaGuardadaPorId(nombreUsuario.toString(), listaId);
         DetalleLista40kView detalleLista = creacionListasService.prepararDetalleLista40kView(lista);
         model.addAttribute("detalleLista", detalleLista);
-        return "detalleLista40k";
+        return "listas/detalleLista40k";
     }
 
     @PostMapping("/creador-listas-40k/guardar")

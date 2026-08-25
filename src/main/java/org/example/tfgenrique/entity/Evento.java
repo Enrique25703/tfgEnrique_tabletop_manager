@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -50,6 +51,12 @@ public class Evento {
 
     @Column(length = 150)
     private String ubicacion;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitud;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitud;
 
     @Column(length = 80)
     private String ciudad;
@@ -97,6 +104,10 @@ public class Evento {
     public void setMaxParticipantes(Integer maxParticipantes) { this.maxParticipantes = maxParticipantes; }
     public String getUbicacion() { return ubicacion; }
     public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public BigDecimal getLatitud() { return latitud; }
+    public void setLatitud(BigDecimal latitud) { this.latitud = latitud; }
+    public BigDecimal getLongitud() { return longitud; }
+    public void setLongitud(BigDecimal longitud) { this.longitud = longitud; }
     public String getCiudad() { return ciudad; }
     public void setCiudad(String ciudad) { this.ciudad = ciudad; }
     public LocalDateTime getFechaLimiteInscripcion() { return fechaLimiteInscripcion; }

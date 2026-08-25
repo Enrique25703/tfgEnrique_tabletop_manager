@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<catalogoMisiones juego="WH40K_10" nombre="Misiones Secundarias Warhammer 40k">
+<catalogoMisiones juego="WH40K_11" nombre="Misiones Secundarias Warhammer 40k">
     <misionesSecundarias>
         <mision id="secundaria-eliminar-unidad">
             <titulo>Eliminar una unidad enemiga</titulo>

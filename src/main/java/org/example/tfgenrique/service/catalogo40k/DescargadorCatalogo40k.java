@@ -7,7 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class DescargadorCatalogo40k {
-    private static final String URL_CATALOGO = "https://codeload.github.com/BSData/wh40k-10e/zip/refs/heads/main";
+    private static final String URL_CATALOGO = "https://codeload.github.com/BSData/wh40k-11e/zip/refs/heads/main";
 
     private final HttpClient clienteHttp = HttpClient.newHttpClient();
 

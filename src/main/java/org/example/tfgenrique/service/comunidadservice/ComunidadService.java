@@ -54,6 +54,8 @@ public class ComunidadService {
         private Integer numeroRondas;
         private String lugar;
         private String formatoJuego;
+        private Double latitud;
+        private Double longitud;
 
         public LocalDateTime getFecha() {
             return fecha;
@@ -85,6 +87,22 @@ public class ComunidadService {
 
         public void setFormatoJuego(String formatoJuego) {
             this.formatoJuego = formatoJuego;
+        }
+
+        public Double getLatitud() {
+            return latitud;
+        }
+
+        public void setLatitud(Double latitud) {
+            this.latitud = latitud;
+        }
+
+        public Double getLongitud() {
+            return longitud;
+        }
+
+        public void setLongitud(Double longitud) {
+            this.longitud = longitud;
         }
     }
 

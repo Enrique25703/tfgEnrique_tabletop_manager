@@ -1,6 +1,8 @@
 package org.example.tfgenrique.service;
+
 import org.example.tfgenrique.dao.FuenteCatalogoRepository;
 import org.example.tfgenrique.dao.ListaEjercitoRepository;
+import org.example.tfgenrique.dao.ListaEjercitoConsultaRepository;
 import org.example.tfgenrique.dao.SistemaJuegoRepository;
 import org.example.tfgenrique.dao.UsuarioRepository;
 import org.example.tfgenrique.dao.VersionListaEjercitoRepository;
@@ -9,6 +11,8 @@ import org.example.tfgenrique.entity.ListaEjercito;
 import org.example.tfgenrique.entity.SistemaJuego;
 import org.example.tfgenrique.entity.Usuario;
 import org.example.tfgenrique.entity.VersionListaEjercito;
+import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,21 +31,22 @@ import java.util.Map;
 public class CreacionListasService {
 
     private static final String VERSION_ESQUEMA_JSON = "1.0";
-    private static final String FORMATO_40K = "WH40K_10";
+    private static final String FORMATO_40K = "WH40K_11";
     private static final String FORMATO_AOS = "AOS_4";
     private static final String NOMBRE_FORMATO_40K = "Warhammer 40,000";
     private static final String NOMBRE_FORMATO_AOS = "Age of Sigmar";
-    private static final String EDICION_FORMATO_40K = "10a edicion";
+    private static final String EDICION_FORMATO_40K = "11a edicion";
     private static final String EDICION_FORMATO_AOS = "4a edicion";
     private static final String FUENTE_CATALOGO_40K = "BSData";
     private static final String FUENTE_CATALOGO_AOS = "BSData";
     private static final String TIPO_FUENTE_40K = "GIT";
     private static final String TIPO_FUENTE_AOS = "GIT";
-    private static final String URL_FUENTE_40K = "https://github.com/BSData/wh40k-10e";
+    private static final String URL_FUENTE_40K = "https://github.com/BSData/wh40k-11e";
     private static final String URL_FUENTE_AOS = "https://github.com/BSData/age-of-sigmar-4th";
     private static final String RAMA_FUENTE_40K = "main";
     private static final String RAMA_FUENTE_AOS = "main";
     private static final int LIMITE_PUNTOS_POR_DEFECTO = 2000;
+    private static final String CATEGORIA_DISPOSICION = "disposicion";
     private static final String CATEGORIA_PERSONAJES = "personajes";
     private static final String CATEGORIA_LINEA = "linea";
     private static final String CATEGORIA_TRANSPORTE = "transporte";
@@ -53,19 +58,22 @@ public class CreacionListasService {
     private final FuenteCatalogoRepository fuenteCatalogoRepository;
     private final ListaEjercitoRepository listaEjercitoRepository;
     private final VersionListaEjercitoRepository versionListaEjercitoRepository;
+    private final ListaEjercitoConsultaRepository listaEjercitoConsultaRepository;
 
     public CreacionListasService(
             UsuarioRepository usuarioRepository,
             SistemaJuegoRepository sistemaJuegoRepository,
             FuenteCatalogoRepository fuenteCatalogoRepository,
             ListaEjercitoRepository listaEjercitoRepository,
-            VersionListaEjercitoRepository versionListaEjercitoRepository
+            VersionListaEjercitoRepository versionListaEjercitoRepository,
+            ListaEjercitoConsultaRepository listaEjercitoConsultaRepository
     ) {
         this.usuarioRepository = usuarioRepository;
         this.sistemaJuegoRepository = sistemaJuegoRepository;
         this.fuenteCatalogoRepository = fuenteCatalogoRepository;
         this.listaEjercitoRepository = listaEjercitoRepository;
         this.versionListaEjercitoRepository = versionListaEjercitoRepository;
+        this.listaEjercitoConsultaRepository = listaEjercitoConsultaRepository;
     }
 
     @Transactional
@@ -107,11 +115,10 @@ public class CreacionListasService {
 
         LocalDateTime ahora = LocalDateTime.now();
         ListaEjercito listaEjercito = listaEjercitoRepository
-                .findByPropietarioUsuarioAndSistemaJuegoAndNombre(usuario, sistemaJuego, nombreLista)
+                .findForUpdate(usuario, sistemaJuego, nombreLista)
                 .orElseGet(() -> crearListaEjercito(usuario, sistemaJuego, nombreLista, ahora));
 
-        long versionesExistentes = versionListaEjercitoRepository.countByListaEjercito(listaEjercito);
-        int numeroVersion = (int) versionesExistentes + 1;
+        int numeroVersion = (listaEjercito.getNumeroVersionActual() == null ? 0 : listaEjercito.getNumeroVersionActual()) + 1;
 
         String faccion = normalizarTexto(request.faccion());
         listaEjercito.setNombreFaccionSnapshot(faccion);
@@ -145,12 +152,18 @@ public class CreacionListasService {
             String faccion,
             String ejercito,
             String nombreLista,
-            Catalogo40kService.Ejercito40k ejercitoData
+            Integer limitePuntos,
+            Catalogo40kService.Catalogo40kData catalogo
     ) {
+        Catalogo40kService.Ejercito40k ejercitoData = catalogo == null ? null : catalogo.buscarEjercito(faccion, ejercito);
+        Catalogo40kService.ReglasEjercito40k reglasEjercito = catalogo == null
+                ? Catalogo40kService.ReglasEjercito40k.vacias()
+                : catalogo.buscarReglasEjercito(faccion, ejercito);
         Map<String, CategoriaCreadorListaView> categorias = crearCategoriasCreador();
         if (ejercitoData != null) {
             for (Catalogo40kService.Unidad40k unidad : ejercitoData.unidades()) {
                 String categoria = resolverCategoriaUnidad(unidad.roles());
+                Catalogo40kService.VinculosUnidad40k vinculos = reglasEjercito.buscarVinculos(unidad.nombre());
                 categorias.get(categoria).unidades().add(new UnidadCatalogoView(
                         valorSeguroVista(unidad.nombre()),
                         valorSeguroVista(unidad.roles()),
@@ -159,7 +172,18 @@ public class CreacionListasService {
                         categoria,
                         valorSeguroVista(unidad.armas()),
                         valorSeguroVista(unidad.habilidades()),
-                        serializarConfiguracionUnidad(unidad.gruposMiniaturas(), unidad.opcionesComposicion())
+                        valorSeguroVista(unidad.palabrasClaveFaccion()),
+                        valorSeguroVista(unidad.palabrasClave()),
+                        serializarConfiguracionUnidad(unidad.gruposMiniaturas(), unidad.opcionesComposicion()),
+                        esUnidadLegend40k(unidad),
+                        esUnidadFortificacion40k(unidad),
+                        esUnidadAliada40k(unidad),
+                        esUnidadBattleline40k(unidad),
+                        esUnidadEpicHero40k(unidad),
+                        esUnidadCharacter40k(unidad),
+                        vinculos.leader(),
+                        vinculos.support(),
+                        serializarListaTextosComoJson(vinculos.unidadesCompatibles())
                 ));
             }
         }
@@ -169,8 +193,11 @@ public class CreacionListasService {
                 normalizarTexto(nombreLista),
                 normalizarTexto(faccion),
                 normalizarTexto(ejercito),
-                LIMITE_PUNTOS_POR_DEFECTO,
-                List.copyOf(categorias.values())
+                limitePuntos == null || limitePuntos <= 0 ? LIMITE_PUNTOS_POR_DEFECTO : limitePuntos,
+                List.copyOf(categorias.values()),
+                List.of(),
+                reglasEjercito.destacamentos(),
+                List.of()
         );
     }
 
@@ -191,6 +218,7 @@ public class CreacionListasService {
 
     private Map<String, CategoriaCreadorListaView> crearCategoriasCreador() {
         Map<String, CategoriaCreadorListaView> categorias = new LinkedHashMap<>();
+        categorias.put(CATEGORIA_DISPOSICION, new CategoriaCreadorListaView(CATEGORIA_DISPOSICION, "Disposicion", new ArrayList<>()));
         categorias.put(CATEGORIA_PERSONAJES, new CategoriaCreadorListaView(CATEGORIA_PERSONAJES, "Personajes", new ArrayList<>()));
         categorias.put(CATEGORIA_LINEA, new CategoriaCreadorListaView(CATEGORIA_LINEA, "Linea", new ArrayList<>()));
         categorias.put(CATEGORIA_TRANSPORTE, new CategoriaCreadorListaView(CATEGORIA_TRANSPORTE, "Transporte", new ArrayList<>()));
@@ -365,8 +393,56 @@ public class CreacionListasService {
         return minimo == null ? 0 : minimo;
     }
 
+    private boolean esUnidadLegend40k(Catalogo40kService.Unidad40k unidad) {
+        return unirTextoUnidad40k(unidad).contains("legends");
+    }
+
+    private boolean esUnidadFortificacion40k(Catalogo40kService.Unidad40k unidad) {
+        String texto = unirTextoUnidad40k(unidad);
+        return texto.contains("fortification") || texto.contains("fortificacion");
+    }
+
+    private boolean esUnidadAliada40k(Catalogo40kService.Unidad40k unidad) {
+        String texto = unirTextoUnidad40k(unidad);
+        return texto.contains("imperial agents")
+                || texto.contains("agents of the imperium")
+                || texto.contains("agent of the imperium")
+                || texto.contains("freeblade")
+                || texto.contains("chaos daemons")
+                || texto.contains("chaos demons")
+                || texto.contains("allied unit")
+                || texto.contains("allies");
+    }
+
+    private boolean esUnidadBattleline40k(Catalogo40kService.Unidad40k unidad) {
+        return valorSeguroONulo(unidad.roles()).toLowerCase(Locale.ROOT).contains("battleline");
+    }
+
+    private boolean esUnidadEpicHero40k(Catalogo40kService.Unidad40k unidad) {
+        return valorSeguroONulo(unidad.roles()).toLowerCase(Locale.ROOT).contains("epic hero");
+    }
+
+    private boolean esUnidadCharacter40k(Catalogo40kService.Unidad40k unidad) {
+        String roles = valorSeguroONulo(unidad.roles()).toLowerCase(Locale.ROOT);
+        return roles.contains("character") || roles.contains("epic hero");
+    }
+
+    private String unirTextoUnidad40k(Catalogo40kService.Unidad40k unidad) {
+        return (
+                valorSeguroONulo(unidad.nombre()) + " "
+                        + valorSeguroONulo(unidad.roles()) + " "
+                        + valorSeguroONulo(unidad.palabrasClaveFaccion()) + " "
+                        + valorSeguroONulo(unidad.palabrasClave()) + " "
+                        + valorSeguroONulo(unidad.habilidades())
+        ).toLowerCase(Locale.ROOT);
+    }
+
     private String normalizarTexto(String texto) {
         return texto == null ? "" : texto.trim();
+    }
+
+    private String valorSeguroONulo(String texto) {
+        return texto == null ? "" : texto;
     }
 
     private String serializarConfiguracionUnidad(
@@ -596,6 +672,12 @@ public class CreacionListasService {
         json.append(']');
     }
 
+    private String serializarListaTextosComoJson(List<String> textos) {
+        StringBuilder json = new StringBuilder();
+        serializarListaTextos(json, textos == null ? List.of() : textos);
+        return json.toString();
+    }
+
     private String escaparJson(String texto) {
         String valor = texto == null ? "" : texto;
         StringBuilder escapado = new StringBuilder(valor.length() + 8);
@@ -634,7 +716,10 @@ public class CreacionListasService {
             String faccion,
             String ejercito,
             Integer limitePuntos,
-            List<CategoriaCreadorListaView> categorias
+            List<CategoriaCreadorListaView> categorias,
+            List<?> tamanosBatalla,
+            List<Catalogo40kService.Destacamento40k> destacamentos,
+            List<?> mejoras
     ) {
     }
 
@@ -653,7 +738,18 @@ public class CreacionListasService {
             String categoria,
             String armas,
             String habilidades,
-            String configuracionJson
+            String palabrasClaveFaccion,
+            String palabrasClave,
+            String configuracionJson,
+            boolean legend,
+            boolean fortificacion,
+            boolean aliada,
+            boolean battleline,
+            boolean epicHero,
+            boolean character,
+            boolean leader,
+            boolean support,
+            String compatiblesJson
     ) {
     }
 
@@ -663,6 +759,7 @@ public class CreacionListasService {
             String faccion,
             String ejercito,
             String nombreLista,
+            Integer limitePuntos,
             CatalogoAosService.Ejercito40k ejercitoData
     ) {
         Map<String, CategoriaCreadorListaView> categorias = crearCategoriasCreadorAos();
@@ -677,7 +774,18 @@ public class CreacionListasService {
                         categoria,
                         valorSeguroVista(unidad.armas()),
                         valorSeguroVista(unidad.habilidades()),
-                        serializarConfiguracionUnidadAos(unidad.gruposMiniaturas(), unidad.opcionesComposicion())
+                        "",
+                        "",
+                        serializarConfiguracionUnidadAos(unidad.gruposMiniaturas(), unidad.opcionesComposicion()),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        ""
                 ));
             }
         }
@@ -687,8 +795,11 @@ public class CreacionListasService {
                 normalizarTexto(nombreLista),
                 normalizarTexto(faccion),
                 normalizarTexto(ejercito),
-                LIMITE_PUNTOS_POR_DEFECTO,
-                List.copyOf(categorias.values())
+                limitePuntos == null || limitePuntos <= 0 ? LIMITE_PUNTOS_POR_DEFECTO : limitePuntos,
+                List.copyOf(categorias.values()),
+                List.of(),
+                List.of(),
+                List.of()
         );
     }
 
@@ -706,6 +817,7 @@ public class CreacionListasService {
             }
             listas.add(new ListaResumenView(
                     lista.listaId(),
+                    valorSeguroVista(lista.formatoJuego()),
                     valorSeguroVista(lista.nombreLista()),
                     obtenerNombreFormatoJuego(lista.formatoJuego()),
                     textoMostrable(lista.faccion(), "Sin faccion"),
@@ -761,13 +873,13 @@ public class CreacionListasService {
             throw new IllegalArgumentException("No hay un usuario autenticado.");
         }
 
-        java.util.List<VersionListaEjercitoRepository.ListaGuardadaProjection> listas =
-                versionListaEjercitoRepository.buscarListasActualesPorUsuario(nombreUsuarioSesion);
-        java.util.List<VersionListaEjercitoRepository.UnidadListaGuardadaProjection> unidades =
-                versionListaEjercitoRepository.buscarUnidadesDeListasActualesPorUsuario(nombreUsuarioSesion);
+        java.util.List<ListaEjercitoConsultaRepository.ListaGuardadaProjection> listas =
+                listaEjercitoConsultaRepository.buscarListasActualesPorUsuario(nombreUsuarioSesion);
+        java.util.List<ListaEjercitoConsultaRepository.UnidadListaGuardadaProjection> unidades =
+                listaEjercitoConsultaRepository.buscarUnidadesDeListasActualesPorUsuario(nombreUsuarioSesion);
 
         java.util.Map<Long, java.util.List<UnidadGuardadaView>> unidadesPorLista = new java.util.LinkedHashMap<>();
-        for (VersionListaEjercitoRepository.UnidadListaGuardadaProjection unidad : unidades) {
+        for (ListaEjercitoConsultaRepository.UnidadListaGuardadaProjection unidad : unidades) {
             unidadesPorLista
                     .computeIfAbsent(unidad.getListaId(), clave -> new java.util.ArrayList<>())
                     .add(new UnidadGuardadaView(
@@ -779,7 +891,7 @@ public class CreacionListasService {
         }
 
         java.util.List<ListaGuardadaView> resultado = new java.util.ArrayList<>();
-        for (VersionListaEjercitoRepository.ListaGuardadaProjection lista : listas) {
+        for (ListaEjercitoConsultaRepository.ListaGuardadaProjection lista : listas) {
             resultado.add(new ListaGuardadaView(
                     lista.getListaId(),
                     valorSeguroVista(lista.getNombreLista()),
@@ -806,6 +918,32 @@ public class CreacionListasService {
                 .filter(lista -> listaId.equals(lista.listaId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No se ha encontrado la lista solicitada."));
+    }
+
+    @Transactional(readOnly = true)
+    public ListaExportacionView obtenerListaParaExportar(String nombreUsuarioSesion, Long listaId) {
+        if (nombreUsuarioSesion == null || nombreUsuarioSesion.isBlank()) {
+            throw new IllegalArgumentException("No hay un usuario autenticado.");
+        }
+        if (listaId == null) {
+            throw new IllegalArgumentException("Debes indicar una lista.");
+        }
+
+        ListaEjercitoConsultaRepository.ListaExportacionProjection lista =
+                listaEjercitoConsultaRepository.buscarListaActualParaExportar(nombreUsuarioSesion, listaId)
+                        .orElseThrow(() -> new IllegalArgumentException("No se ha encontrado la lista solicitada."));
+
+        return new ListaExportacionView(
+                lista.getListaId(),
+                valorSeguroVista(lista.getNombreLista()),
+                valorSeguroVista(lista.getFormatoJuego()),
+                valorSeguroVista(lista.getFaccion()),
+                valorSeguroVista(lista.getEjercito()),
+                lista.getPuntosActuales() == null ? 0 : lista.getPuntosActuales(),
+                lista.getLimitePuntos() == null ? LIMITE_PUNTOS_POR_DEFECTO : lista.getLimitePuntos(),
+                lista.getNumeroVersion() == null ? 0 : lista.getNumeroVersion(),
+                valorSeguroVista(lista.getDatosListaJson())
+        );
     }
 
     private String valorSeguroVista(String texto) {
@@ -868,12 +1006,26 @@ public class CreacionListasService {
 
     public record ListaResumenView(
             Long listaId,
+            String codigoFormatoJuego,
             String nombreLista,
             String formatoJuego,
             String faccion,
             String ejercito,
             String puntos,
             Integer numeroVersion
+    ) {
+    }
+
+    public record ListaExportacionView(
+            Long listaId,
+            String nombreLista,
+            String formatoJuego,
+            String faccion,
+            String ejercito,
+            Integer puntosActuales,
+            Integer limitePuntos,
+            Integer numeroVersion,
+            String datosListaJson
     ) {
     }
 

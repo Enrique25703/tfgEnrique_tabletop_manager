@@ -12,14 +12,7 @@
     <a class="sidebar-link<c:if test="${sidebarActive eq 'catalogos'}"> active</c:if>" href="/catalogos">Catalogos</a>
     <a class="sidebar-link<c:if test="${sidebarActive eq 'listas'}"> active</c:if>" href="/mis-listas">Listas</a>
     <a class="sidebar-link<c:if test="${sidebarActive eq 'partidas'}"> active</c:if>" href="/partidas">Partidas</a>
-    <c:choose>
-      <c:when test="${sidebarComunidadesEnabled}">
-        <a class="sidebar-link<c:if test="${sidebarActive eq 'comunidades'}"> active</c:if>" href="/comunidades">Comunidades</a>
-      </c:when>
-      <c:otherwise>
-        <span class="sidebar-link disabled">Comunidades</span>
-      </c:otherwise>
-    </c:choose>
+    <a class="sidebar-link<c:if test="${sidebarActive eq 'comunidades'}"> active</c:if>" href="/comunidades">Comunidades</a>
     <c:if test="${not empty sessionScope.rol and fn:toUpperCase(sessionScope.rol) eq 'ADMIN'}">
       <a class="sidebar-link<c:if test="${sidebarActive eq 'admin'}"> active</c:if>" href="/admin">ADMIN</a>
     </c:if>
@@ -27,5 +20,5 @@
     <a class="sidebar-link<c:if test="${sidebarActive eq 'ajustes'}"> active</c:if>" href="/ajustes">Ajustes</a>
   </nav>
 
-  <div class="sidebar-footer">Enrique Silveira Garcia<br />Tabletop Manager v0.0.1</div>
+  <div class="sidebar-footer">Enrique Silveira Garcia<br />Trabajo fin de grado</div>
 </aside>
