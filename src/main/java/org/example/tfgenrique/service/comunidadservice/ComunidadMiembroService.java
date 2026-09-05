@@ -10,10 +10,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.springframework.web.util.UriUtils;
 
 @Service
 public class ComunidadMiembroService {
+    private static final String PREFIJO_LOGO_COMUNIDAD = "/comunitiespicks/";
+    private static final List<String> LOGOS_COMUNIDAD = List.of(
+            "ChatGPT Image 29 ago 2026, 23_27_08 (1).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (2).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (3).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (4).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (5).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (6).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (7).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (8).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (9).png",
+            "ChatGPT Image 29 ago 2026, 23_27_08 (10).png"
+    );
 
     private final UsuarioRepository usuarioRepository;
     private final ComunidadRepository comunidadRepository;
@@ -30,12 +45,21 @@ public class ComunidadMiembroService {
     }
 
     @Transactional
-    public Long crearComunidad(Long usuarioId, String nombreComunidad) {
+    public Long crearComunidad(Long usuarioId, String nombreComunidad, String descripcion) {
+        return crearComunidad(usuarioId, nombreComunidad, descripcion, null);
+    }
+
+    @Transactional
+    public Long crearComunidad(Long usuarioId, String nombreComunidad, String descripcion, String logoUrl) {
         Usuario usuario = buscarUsuario(usuarioId);
         String nombreNormalizado = normalizarTexto(nombreComunidad);
+        String descripcionNormalizada = normalizarTexto(descripcion);
 
         if (nombreNormalizado.isBlank()) {
             throw new IllegalArgumentException("Debes indicar un nombre para la comunidad.");
+        }
+        if (nombreNormalizado.length() > 120) {
+            throw new IllegalArgumentException("El nombre de la comunidad no puede superar los 120 caracteres.");
         }
         if (comunidadRepository.existsByNombreIgnoreCase(nombreNormalizado)) {
             throw new IllegalArgumentException("Ya existe una comunidad con ese nombre.");
@@ -45,7 +69,9 @@ public class ComunidadMiembroService {
 
         Comunidad comunidad = new Comunidad();
         comunidad.setNombre(nombreNormalizado);
-        comunidad.setLogoUrl(null);
+        comunidad.setLogoUrl(normalizarLogoComunidad(logoUrl));
+        comunidad.setDescripcion(descripcionNormalizada.isBlank() ? null : descripcionNormalizada);
+        comunidad.setPrivacidad(ComunidadConstantes.PRIVACIDAD_PUBLICA);
         comunidad.setActivo(true);
         comunidad.setCreadoEn(ahora);
         comunidad.setActualizadoEn(ahora);
@@ -54,7 +80,7 @@ public class ComunidadMiembroService {
         AfiliacionComunidad afiliacion = new AfiliacionComunidad();
         afiliacion.setComunidad(comunidad);
         afiliacion.setUsuario(usuario);
-        afiliacion.setRolComunidad(ComunidadConstantes.ROL_PROPIETARIO);
+        afiliacion.setRolComunidad(ComunidadConstantes.ROL_ADMINISTRADOR);
         afiliacion.setEstadoAfiliacion(ComunidadConstantes.ESTADO_AFILIACION_ACTIVA);
         afiliacion.setUnidoEn(ahora);
         afiliacionComunidadRepository.save(afiliacion);
@@ -66,6 +92,66 @@ public class ComunidadMiembroService {
     public Long unirseAComunidad(Long usuarioId, Long comunidadId) {
         Usuario usuario = buscarUsuario(usuarioId);
         Comunidad comunidad = buscarComunidad(comunidadId);
+
+        activarAfiliacion(usuario, comunidad);
+        return comunidad.getId();
+    }
+
+    @Transactional
+    public void promoverAdministrador(Long usuarioActorId, Long comunidadId, Long usuarioMiembroId) {
+        Usuario actor = buscarUsuario(usuarioActorId);
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        exigirAdministrador(actor, comunidad);
+
+        Usuario miembro = buscarUsuario(usuarioMiembroId);
+        AfiliacionComunidad afiliacion = buscarAfiliacionActiva(miembro, comunidad);
+        if (ComunidadConstantes.esAdministrador(afiliacion.getRolComunidad())) {
+            throw new IllegalArgumentException("El miembro ya es administrador de la comunidad.");
+        }
+        afiliacion.setRolComunidad(ComunidadConstantes.ROL_ADMINISTRADOR);
+        afiliacionComunidadRepository.save(afiliacion);
+    }
+
+    @Transactional
+    public void expulsarMiembro(Long usuarioActorId, Long comunidadId, Long usuarioMiembroId) {
+        Usuario actor = buscarUsuario(usuarioActorId);
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        exigirAdministrador(actor, comunidad);
+
+        Usuario miembro = buscarUsuario(usuarioMiembroId);
+        AfiliacionComunidad afiliacion = buscarAfiliacionActiva(miembro, comunidad);
+        if (ComunidadConstantes.esAdministrador(afiliacion.getRolComunidad())
+                && contarAdministradores(comunidad) <= 1) {
+            throw new IllegalArgumentException("La comunidad debe conservar al menos un administrador.");
+        }
+        afiliacion.setEstadoAfiliacion(ComunidadConstantes.ESTADO_AFILIACION_INACTIVA);
+        afiliacionComunidadRepository.save(afiliacion);
+    }
+
+    @Transactional
+    public void cambiarPrivacidad(Long usuarioActorId, Long comunidadId, String privacidad) {
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        cambiarAjustes(usuarioActorId, comunidadId, privacidad, comunidad.getLogoUrl());
+    }
+
+    @Transactional
+    public void cambiarAjustes(Long usuarioActorId, Long comunidadId, String privacidad, String logoUrl) {
+        Usuario actor = buscarUsuario(usuarioActorId);
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        exigirAdministrador(actor, comunidad);
+
+        String valor = normalizarTexto(privacidad).toUpperCase();
+        if (!ComunidadConstantes.PRIVACIDAD_PUBLICA.equals(valor)
+                && !ComunidadConstantes.PRIVACIDAD_PRIVADA.equals(valor)) {
+            throw new IllegalArgumentException("La privacidad seleccionada no es valida.");
+        }
+        comunidad.setPrivacidad(valor);
+        comunidad.setLogoUrl(normalizarLogoComunidad(logoUrl));
+        comunidad.setActualizadoEn(LocalDateTime.now());
+        comunidadRepository.save(comunidad);
+    }
+
+    AfiliacionComunidad activarAfiliacion(Usuario usuario, Comunidad comunidad) {
 
         AfiliacionComunidad afiliacionExistente = afiliacionComunidadRepository
                 .findByComunidadAndUsuario(comunidad, usuario)
@@ -91,9 +177,9 @@ public class ComunidadMiembroService {
             afiliacion.setEstadoAfiliacion(ComunidadConstantes.ESTADO_AFILIACION_ACTIVA);
             afiliacion.setUnidoEn(ahora);
             afiliacionComunidadRepository.save(afiliacion);
+            return afiliacion;
         }
-
-        return comunidad.getId();
+        return afiliacionExistente;
     }
 
     public Usuario buscarUsuario(Long usuarioId) {
@@ -152,10 +238,56 @@ public class ComunidadMiembroService {
         return buscarMiembrosComunidad(comunidad).size();
     }
 
+    public int contarAdministradores(Comunidad comunidad) {
+        return (int) buscarMiembrosComunidad(comunidad).stream()
+                .filter(afiliacion -> ComunidadConstantes.esAdministrador(afiliacion.getRolComunidad()))
+                .count();
+    }
+
+    public boolean esAdministrador(Usuario usuario, Comunidad comunidad) {
+        return ComunidadConstantes.esAdministrador(buscarAfiliacionActiva(usuario, comunidad).getRolComunidad());
+    }
+
+    public boolean perteneceActivo(Usuario usuario, Comunidad comunidad) {
+        return afiliacionComunidadRepository.findByComunidadAndUsuario(comunidad, usuario)
+                .map(afiliacion -> ComunidadConstantes.ESTADO_AFILIACION_ACTIVA
+                        .equals(afiliacion.getEstadoAfiliacion()))
+                .orElse(false);
+    }
+
+    public AfiliacionComunidad exigirAdministrador(Usuario usuario, Comunidad comunidad) {
+        AfiliacionComunidad afiliacion = buscarAfiliacionActiva(usuario, comunidad);
+        if (!ComunidadConstantes.esAdministrador(afiliacion.getRolComunidad())) {
+            throw new IllegalArgumentException("Solo los administradores pueden realizar esta acción.");
+        }
+        return afiliacion;
+    }
+
     private String normalizarTexto(String texto) {
         if (texto == null) {
             return "";
         }
         return texto.trim();
+    }
+
+    private String normalizarLogoComunidad(String logoUrl) {
+        String valor = normalizarTexto(logoUrl);
+        if (valor.isBlank()) {
+            return null;
+        }
+        String valorDecodificado;
+        try {
+            valorDecodificado = UriUtils.decode(valor, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("La imagen seleccionada no es valida.");
+        }
+        if (!valorDecodificado.startsWith(PREFIJO_LOGO_COMUNIDAD)) {
+            throw new IllegalArgumentException("La imagen seleccionada no es valida.");
+        }
+        String nombreArchivo = valorDecodificado.substring(PREFIJO_LOGO_COMUNIDAD.length());
+        if (!LOGOS_COMUNIDAD.contains(nombreArchivo)) {
+            throw new IllegalArgumentException("La imagen seleccionada no pertenece al catalogo de comunidades.");
+        }
+        return UriUtils.encodePath(PREFIJO_LOGO_COMUNIDAD + nombreArchivo, StandardCharsets.UTF_8);
     }
 }

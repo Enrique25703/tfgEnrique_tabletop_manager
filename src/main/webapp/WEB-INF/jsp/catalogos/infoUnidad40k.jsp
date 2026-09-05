@@ -30,6 +30,11 @@
         color: var(--muted);
       }
 
+      .weapons-panel { margin-top: 18px; }
+      .weapons-table-scroll { overflow-x: auto; }
+      .weapons-table { min-width: 660px; }
+      .weapons-table th:not(:first-child), .weapons-table td { text-align: center; }
+
       @media (max-width: 980px) {
         .two-column {
           grid-template-columns: 1fr;
@@ -93,6 +98,42 @@
                 <p class="text-block"><c:out value="${infoUnidad.armas}" /></p>
               </div>
             </div>
+
+            <c:forEach var="tipoArma" items="${['distancia', 'cuerpoACuerpo']}">
+              <c:set var="perfilesArmas" value="${tipoArma eq 'distancia' ? infoUnidad.armasDistancia : infoUnidad.armasCuerpoACuerpo}" />
+              <section class="sub-panel weapons-panel">
+                <h3>${tipoArma eq 'distancia' ? 'Armas a distancia' : 'Armas cuerpo a cuerpo'}</h3>
+                <c:choose>
+                  <c:when test="${empty perfilesArmas}">
+                    <p class="text-block">El catálogo no incluye perfiles de este tipo para esta unidad.</p>
+                  </c:when>
+                  <c:otherwise>
+                    <div class="weapons-table-scroll" role="region" aria-label="Perfiles de armas ${tipoArma eq 'distancia' ? 'a distancia' : 'cuerpo a cuerpo'}" tabindex="0">
+                      <table class="data-table weapons-table">
+                        <thead><tr>
+                          <th scope="col">Nombre</th><th scope="col">Rango</th>
+                          <th scope="col">Ataques</th><th scope="col">Impacta</th>
+                          <th scope="col">Fuerza</th><th scope="col">Penetración</th><th scope="col">Daño</th>
+                        </tr></thead>
+                        <tbody>
+                          <c:forEach var="arma" items="${perfilesArmas}">
+                            <tr>
+                              <th scope="row"><c:out value="${arma.nombre}" /></th>
+                              <td><c:out value="${arma.rango}" /></td>
+                              <td><c:out value="${arma.ataques}" /></td>
+                              <td><c:out value="${arma.impacta}" /></td>
+                              <td><c:out value="${arma.fuerza}" /></td>
+                              <td><c:out value="${arma.penetracion}" /></td>
+                              <td><c:out value="${arma.dano}" /></td>
+                            </tr>
+                          </c:forEach>
+                        </tbody>
+                      </table>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
+              </section>
+            </c:forEach>
 
             <div class="sub-panel" style="margin-top:18px;">
               <h3>Habilidades</h3>

@@ -94,6 +94,9 @@
                   <thead>
                     <tr>
                       <th>Nombre</th>
+                      <th>Tipo / rol</th>
+                      <th>Palabras clave</th>
+                      <th>Puntos</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -109,6 +112,12 @@
                             <c:out value="${unidad.nombre}" />
                           </a>
                         </td>
+                        <td><c:out value="${unidad.roles}" /></td>
+                        <td>
+                          <c:if test="${not empty unidad.palabrasClaveFaccion}"><c:out value="${unidad.palabrasClaveFaccion}" /> · </c:if>
+                          <c:out value="${unidad.palabrasClave}" />
+                        </td>
+                        <td><c:out value="${unidad.puntos}" /></td>
                       </tr>
                     </c:forEach>
                   </tbody>

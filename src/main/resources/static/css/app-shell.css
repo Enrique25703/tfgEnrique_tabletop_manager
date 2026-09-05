@@ -244,10 +244,22 @@ a:focus {
 
 .notification-summary {
   display: block;
+  width: 100%;
   padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
   list-style: none;
+  text-align: left;
   cursor: pointer;
   transition: background-color 0.15s ease;
+}
+
+.notification-extra {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
 }
 
 .notification-summary::-webkit-details-marker {
@@ -270,6 +282,113 @@ a:focus {
 }
 
 .notification-row-actions form {
+  margin: 0;
+}
+
+.notification-dialog {
+  width: min(540px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: #0d1725;
+  color: var(--text);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+}
+
+.notification-dialog::backdrop {
+  background: rgba(2, 7, 13, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.notification-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.notification-dialog-header small {
+  color: var(--muted);
+}
+
+.notification-dialog-header h2 {
+  margin: 5px 0 0;
+  font-size: 1.35rem;
+}
+
+.notification-dialog-close {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  font-size: 1.35rem;
+}
+
+.notification-dialog-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.notification-dialog-body p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.notification-dialog-message,
+.notification-dialog-status {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(16, 29, 46, 0.82);
+}
+
+.notification-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.notification-detail-grid div {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(16, 29, 46, 0.82);
+}
+
+.notification-detail-grid dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.notification-detail-grid dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+.notification-delete-form {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.notification-dialog-message p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.notification-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notification-dialog-actions form {
   margin: 0;
 }
 
@@ -509,6 +628,198 @@ a:focus {
   text-decoration: underline;
 }
 
+.community-image-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.community-image-picker legend {
+  font-weight: 700;
+}
+
+.community-image-picker > p {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.community-image-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(70px, 1fr));
+  gap: 10px;
+}
+
+.community-image-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: rgba(16, 29, 46, 0.82);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.community-image-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+.community-image-option:has(input:checked) {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(126, 166, 210, 0.18);
+}
+
+.community-image-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.community-image-option img {
+  width: 100%;
+  height: 100%;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.community-image-empty {
+  align-content: center;
+  gap: 3px;
+  color: var(--muted);
+}
+
+.community-image-empty span {
+  font-size: 1.5rem;
+}
+
+.community-image-selector {
+  display: grid;
+  gap: 12px;
+}
+
+.community-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(16, 29, 46, 0.82);
+}
+
+.community-image-preview img {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.community-image-preview div {
+  display: grid;
+  gap: 5px;
+}
+
+.community-image-preview small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.community-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.community-image-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: 90vh;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: #0d1725;
+  color: var(--text);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+}
+
+.community-image-dialog::backdrop {
+  background: rgba(2, 7, 13, 0.82);
+  backdrop-filter: blur(4px);
+}
+
+.community-image-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.community-image-dialog-header h3,
+.community-image-dialog-header p {
+  margin: 0;
+}
+
+.community-image-dialog-header p {
+  margin-top: 5px;
+  color: var(--muted);
+}
+
+.community-image-catalog {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+
+.community-image-choice {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 5px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  background: rgba(16, 29, 46, 0.82);
+  color: var(--muted);
+}
+
+.community-image-choice:hover,
+.community-image-choice.selected {
+  border-color: var(--accent-2);
+}
+
+.community-image-choice.selected {
+  box-shadow: 0 0 0 3px rgba(126, 166, 210, 0.18);
+}
+
+.community-image-choice img {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.community-image-choice span {
+  padding: 8px;
+}
+
+.community-image-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 18px 18px;
+}
+
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -526,6 +837,16 @@ a:focus {
 }
 
 @media (max-width: 640px) {
+  .community-image-grid {
+    grid-template-columns: repeat(3, minmax(70px, 1fr));
+  }
+
+  .community-image-catalog {
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+  }
+  .notification-detail-grid {
+    grid-template-columns: 1fr;
+  }
   .notifications-panel {
     right: -8px;
     width: min(320px, calc(100vw - 48px));

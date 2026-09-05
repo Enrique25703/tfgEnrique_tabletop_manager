@@ -15,6 +15,8 @@ public class StaticResourceConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/profilepicks/");
         registry.addResourceHandler("/menupicks/**")
                 .addResourceLocations("classpath:/menupicks/");
+        registry.addResourceHandler("/comunitiespicks/**")
+                .addResourceLocations("classpath:/comunitiespicks/");
         registry.addResourceHandler("/unitTypes40k/**")
                 .addResourceLocations("classpath:/unitTypes40k/");
     }

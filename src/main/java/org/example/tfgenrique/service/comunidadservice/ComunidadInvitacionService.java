@@ -53,8 +53,14 @@ public class ComunidadInvitacionService {
         if (lugar.isBlank()) {
             throw new IllegalArgumentException("Debes indicar un lugar para la partida.");
         }
+        if (lugar.length() > 150) {
+            throw new IllegalArgumentException("El lugar no puede superar los 150 caracteres.");
+        }
         if (formatoJuego.isBlank()) {
             throw new IllegalArgumentException("Debes indicar un formato de juego.");
+        }
+        if (formatoJuego.length() > 30) {
+            throw new IllegalArgumentException("El formato de juego no es válido.");
         }
 
         InvitacionPartidaComunidad invitacion = new InvitacionPartidaComunidad();

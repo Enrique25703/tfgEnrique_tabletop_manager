@@ -7,6 +7,7 @@
   let contadorUnidad = 0;
   let unidadActiva = null;
   const formatoJuego = app.dataset.formatoJuego || "";
+  const esAgeOfSigmar = formatoJuego.toUpperCase().startsWith("AOS");
   const nombreLista = app.dataset.nombreLista || "";
   const faccion = app.dataset.faccion || "";
   const ejercito = app.dataset.ejercito || "";
@@ -91,7 +92,7 @@
 
   function actualizarEstadoCategoriasCatalogo() {
     document.querySelectorAll(".catalog-category").forEach(function (categoria) {
-      const visibles = Array.from(categoria.querySelectorAll(".boton-catalogo-unidad")).some(function (boton) {
+      const visibles = Array.from(categoria.querySelectorAll(".boton-catalogo-unidad, .boton-catalogo-especial")).some(function (boton) {
         return boton.style.display !== "none";
       });
       categoria.classList.toggle("catalog-category-hidden", !visibles);
@@ -172,6 +173,7 @@
       character: valorBooleanoDataset(boton.dataset.character),
       leader: valorBooleanoDataset(boton.dataset.leader),
       support: valorBooleanoDataset(boton.dataset.support),
+      palabrasClaveFaccion: boton.dataset.palabrasClaveFaccion || "",
       palabrasClave: boton.dataset.palabrasClave || "",
       compatibles: parsearJsonSeguro(boton.dataset.compatiblesJson, [])
     };
@@ -396,8 +398,12 @@
     }
 
     if (unidadActiva === contenedor.dataset.identificador) {
+      const claves = [contenedor.dataset.palabrasClaveFaccion, contenedor.dataset.palabrasClave]
+        .filter(function (valor) { return !!valor; })
+        .join(", ");
       document.getElementById("detalleMeta").textContent = "Rol: " + (contenedor.dataset.roles || "Sin rol")
-        + " | Puntos: " + puntos;
+        + " | Puntos: " + puntos
+        + (claves ? " | Palabras clave: " + claves : "");
     }
 
     actualizarContadorPuntos();
@@ -428,7 +434,9 @@
   }
 
   function agregarUnidad(datosUnidad) {
-    if (datosUnidad.tipoEspecial && document.querySelector('[data-tipo-especial="' + datosUnidad.tipoEspecial + '"]')) {
+    const especialExistente = datosUnidad.tipoEspecial && obtenerUnidadEspecial(datosUnidad.tipoEspecial);
+    if (especialExistente) {
+      seleccionarUnidad(especialExistente);
       return;
     }
     const heroeEpicoRepetido = datosUnidad.epicHero && Array.from(
@@ -466,6 +474,7 @@
     contenedor.dataset.character = String(!!datosUnidad.character);
     contenedor.dataset.leader = String(!!datosUnidad.leader);
     contenedor.dataset.support = String(!!datosUnidad.support);
+    contenedor.dataset.palabrasClaveFaccion = datosUnidad.palabrasClaveFaccion || "";
     contenedor.dataset.palabrasClave = datosUnidad.palabrasClave || "";
     contenedor.dataset.compatibles = JSON.stringify(datosUnidad.compatibles || []);
     contenedor.dataset.warlord = "false";
@@ -512,6 +521,7 @@
         character: valorBooleanoDataset(contenedor.dataset.character),
         leader: valorBooleanoDataset(contenedor.dataset.leader),
         support: valorBooleanoDataset(contenedor.dataset.support),
+        palabrasClaveFaccion: contenedor.dataset.palabrasClaveFaccion || "",
         palabrasClave: contenedor.dataset.palabrasClave || "",
         compatibles: parsearJsonSeguro(contenedor.dataset.compatibles, [])
       });
@@ -540,6 +550,7 @@
     bloque.appendChild(contenedor);
     actualizarImagenUnidad(contenedor);
     actualizarPresentacionUnidad(contenedor);
+    if (datosUnidad.tipoEspecial) seleccionarUnidad(contenedor);
   }
 
   function obtenerUnidadActiva() {
@@ -577,6 +588,7 @@
     }
 
     contenedor.remove();
+    if (contenedor.dataset.tipoEspecial === "destacamentos") sincronizarDestacamentos();
     revisarBloqueVacio(idBloque);
     actualizarContadorPuntos();
   }
@@ -600,6 +612,26 @@
     return parsearJsonSeguro(contenedor.dataset.configuracionEstado, { seleccionados: [] });
   }
 
+  function obtenerUnidadEspecial(tipo) {
+    return document.querySelector('.unidad-en-lista[data-tipo-especial="' + tipo + '"]');
+  }
+
+  function sincronizarDestacamentos() {
+    const disposicion = obtenerUnidadEspecial("disposicion");
+    if (disposicion) {
+      const disponibles = disposicionesDisponibles();
+      const estado = obtenerEstadoEspecial(disposicion);
+      estado.seleccionados = estado.seleccionados.filter(function (valor) {
+        return disponibles.includes(valor);
+      });
+      actualizarEstadoConfiguracion(disposicion, estado);
+      if (unidadActiva === disposicion.dataset.identificador) renderizarConfiguracionUnidad(disposicion);
+    }
+    document.getElementById("contadorDP").textContent = String(
+      obtenerTotalDP(obtenerEstadoEspecial(obtenerUnidadEspecial("destacamentos")).seleccionados)
+    );
+  }
+
   function opcionesDestacamentos() {
     return Array.from(document.querySelectorAll("#datosDestacamentos option"));
   }
@@ -613,7 +645,7 @@
   }
 
   function disposicionesDisponibles() {
-    const destacamentos = document.querySelector('[data-tipo-especial="destacamentos"]');
+    const destacamentos = obtenerUnidadEspecial("destacamentos");
     const seleccionados = obtenerEstadoEspecial(destacamentos).seleccionados;
     return opcionesDestacamentos().filter(function (opcion) {
       return seleccionados.indexOf(opcion.value) >= 0;
@@ -660,21 +692,14 @@
         else siguiente.seleccionados = siguiente.seleccionados.filter(function (valor) { return valor !== id; });
         if (esDestacamentos && obtenerTotalDP(siguiente.seleccionados) > 3) {
           input.checked = false;
+          document.getElementById("estadoGuardado").textContent = "Los destacamentos no pueden superar 3 DP.";
           return;
         }
+        document.getElementById("estadoGuardado").textContent = "";
         actualizarEstadoConfiguracion(contenedor, siguiente);
         if (esDestacamentos) {
-          const unidadDisposicion = document.querySelector('[data-tipo-especial="disposicion"]');
-          if (unidadDisposicion) {
-            const disponibles = disposicionesDisponibles();
-            const estadoDisposicion = obtenerEstadoEspecial(unidadDisposicion);
-            estadoDisposicion.seleccionados = estadoDisposicion.seleccionados.filter(function (valor) {
-              return disponibles.indexOf(valor) >= 0;
-            });
-            actualizarEstadoConfiguracion(unidadDisposicion, estadoDisposicion);
-          }
+          sincronizarDestacamentos();
         }
-        document.getElementById("contadorDP").textContent = String(obtenerTotalDP(obtenerEstadoEspecial(document.querySelector('[data-tipo-especial="destacamentos"]')).seleccionados));
         renderizarConfiguracionUnidad(contenedor);
         validarLista();
       });
@@ -1222,16 +1247,18 @@
     const errores = [];
     const unidades = Array.from(document.querySelectorAll(".unidad-en-lista"));
     const puntos = parseInt(document.getElementById("contadorPuntos").textContent || "0", 10);
-    if (unidades.length === 0) errores.push("Añade al menos una unidad.");
-    const unidadDestacamentos = document.querySelector('[data-tipo-especial="destacamentos"]');
-    const unidadDisposicion = document.querySelector('[data-tipo-especial="disposicion"]');
-    if (!unidadDestacamentos) errores.push("Debes añadir Destacamentos.");
-    if (!unidadDisposicion) errores.push("Debes añadir Disposición.");
-    const estadoDestacamentos = obtenerEstadoEspecial(unidadDestacamentos);
-    const estadoDisposicion = obtenerEstadoEspecial(unidadDisposicion);
-    if (unidadDestacamentos && estadoDestacamentos.seleccionados.length === 0) errores.push("Debes marcar al menos un destacamento.");
-    if (obtenerTotalDP(estadoDestacamentos.seleccionados) > 3) errores.push("Los destacamentos superan el máximo de 3 DP.");
-    if (unidadDisposicion && estadoDisposicion.seleccionados.length === 0) errores.push("Debes seleccionar una disposición.");
+    if (!unidades.some(function (unidad) { return !unidad.dataset.tipoEspecial; })) errores.push("Añade al menos una unidad.");
+    if (!esAgeOfSigmar) {
+      const unidadDestacamentos = obtenerUnidadEspecial("destacamentos");
+      const unidadDisposicion = obtenerUnidadEspecial("disposicion");
+      if (!unidadDestacamentos) errores.push("Debes añadir Destacamentos.");
+      if (!unidadDisposicion) errores.push("Debes añadir Disposición.");
+      const estadoDestacamentos = obtenerEstadoEspecial(unidadDestacamentos);
+      const estadoDisposicion = obtenerEstadoEspecial(unidadDisposicion);
+      if (unidadDestacamentos && estadoDestacamentos.seleccionados.length === 0) errores.push("Debes marcar al menos un destacamento.");
+      if (obtenerTotalDP(estadoDestacamentos.seleccionados) > 3) errores.push("Los destacamentos superan el máximo de 3 DP.");
+      if (unidadDisposicion && estadoDisposicion.seleccionados.length === 0) errores.push("Debes seleccionar una disposición.");
+    }
     if (puntos > limitePuntos) errores.push("Se supera el límite de puntos por " + (puntos - limitePuntos) + ".");
     unidades.forEach(function (unidad) {
       const nombre = unidad.dataset.nombre || "";
@@ -1258,9 +1285,11 @@
     });
 
     const warlords = unidades.filter(function (unidad) { return valorBooleanoDataset(unidad.dataset.warlord); });
-    if (warlords.length !== 1) errores.push("Debes designar exactamente un Warlord.");
+    if (warlords.length !== 1) errores.push(esAgeOfSigmar
+      ? "Debes designar exactamente un General."
+      : "Debes designar exactamente un Warlord.");
     if (warlords.some(function (unidad) { return !valorBooleanoDataset(unidad.dataset.character); })) {
-      errores.push("El Warlord debe ser un Character.");
+      errores.push(esAgeOfSigmar ? "El General debe ser un Héroe." : "El Warlord debe ser un Character.");
     }
 
     const lista = document.getElementById("erroresValidacion");

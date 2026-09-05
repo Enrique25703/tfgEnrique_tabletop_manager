@@ -766,6 +766,8 @@ public class CreacionListasService {
         if (ejercitoData != null) {
             for (CatalogoAosService.Unidad40k unidad : ejercitoData.unidades()) {
                 String categoria = resolverCategoriaUnidadAos(unidad.roles());
+                String rolesNormalizados = normalizarTexto(unidad.roles()).toLowerCase(Locale.ROOT);
+                boolean esHeroe = rolesNormalizados.contains("hero");
                 categorias.get(categoria).unidades().add(new UnidadCatalogoView(
                         valorSeguroVista(unidad.nombre()),
                         valorSeguroVista(unidad.roles()),
@@ -774,16 +776,16 @@ public class CreacionListasService {
                         categoria,
                         valorSeguroVista(unidad.armas()),
                         valorSeguroVista(unidad.habilidades()),
-                        "",
-                        "",
+                        valorSeguroVista(unidad.palabrasClaveFaccion()),
+                        valorSeguroVista(unidad.palabrasClave()),
                         serializarConfiguracionUnidadAos(unidad.gruposMiniaturas(), unidad.opcionesComposicion()),
+                        rolesNormalizados.contains("legends"),
+                        rolesNormalizados.contains("faction terrain"),
                         false,
-                        false,
-                        false,
-                        false,
-                        false,
-                        false,
-                        false,
+                        rolesNormalizados.contains("battleline"),
+                        rolesNormalizados.contains("unique"),
+                        esHeroe,
+                        esHeroe,
                         false,
                         ""
                 ));

@@ -17,6 +17,7 @@ import java.util.Locale;
 public class AdminUsuarioService {
     private static final String ROL_ADMIN = "ADMIN";
     private static final String ROL_COMUNIDAD_PROPIETARIO = "PROPIETARIO";
+    private static final String ROL_COMUNIDAD_ADMINISTRADOR = "ADMINISTRADOR";
     private static final String ESTADO_AFILIACION_ACTIVA = "ACTIVA";
     private static final String ESTADO_AFILIACION_INACTIVA = "INACTIVA";
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -109,7 +110,8 @@ public class AdminUsuarioService {
                 .findByUsuarioAndEstadoAfiliacionOrderByUnidoEnAsc(usuario, ESTADO_AFILIACION_ACTIVA);
 
         boolean esPropietarioDeComunidadActiva = afiliacionesActivas.stream()
-                .anyMatch(afiliacion -> ROL_COMUNIDAD_PROPIETARIO.equalsIgnoreCase(afiliacion.getRolComunidad())
+                .anyMatch(afiliacion -> (ROL_COMUNIDAD_PROPIETARIO.equalsIgnoreCase(afiliacion.getRolComunidad())
+                        || ROL_COMUNIDAD_ADMINISTRADOR.equalsIgnoreCase(afiliacion.getRolComunidad()))
                         && afiliacion.getComunidad() != null
                         && Boolean.TRUE.equals(afiliacion.getComunidad().getActivo()));
 

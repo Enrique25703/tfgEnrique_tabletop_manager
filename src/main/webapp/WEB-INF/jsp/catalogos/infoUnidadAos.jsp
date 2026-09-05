@@ -70,6 +70,19 @@
               </p>
             </div>
 
+            <div class="chip-row">
+              <span class="chip">Puntos: <c:out value="${infoUnidadAos.puntos}" /></span>
+              <c:if test="${not empty infoUnidadAos.roles}"><span class="chip">Tipo: <c:out value="${infoUnidadAos.roles}" /></span></c:if>
+            </div>
+
+            <c:if test="${not empty infoUnidadAos.palabrasClaveFaccion or not empty infoUnidadAos.palabrasClave}">
+              <div class="sub-panel" style="margin:18px 0;">
+                <h3>Palabras clave</h3>
+                <c:if test="${not empty infoUnidadAos.palabrasClaveFaccion}"><p><strong>Facción:</strong> <c:out value="${infoUnidadAos.palabrasClaveFaccion}" /></p></c:if>
+                <c:if test="${not empty infoUnidadAos.palabrasClave}"><p><strong>Unidad:</strong> <c:out value="${infoUnidadAos.palabrasClave}" /></p></c:if>
+              </div>
+            </c:if>
+
             <div class="two-column">
               <div class="sub-panel">
                 <h3>Perfil de la unidad</h3>

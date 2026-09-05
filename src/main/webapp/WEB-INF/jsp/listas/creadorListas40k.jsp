@@ -60,7 +60,11 @@
             <div class="builder-grid">
               <section class="builder-column"><h2 class="column-title">Catálogo</h2><div class="catalog-scroll">
                 <c:forEach var="categoria" items="${creadorLista.categorias}"><div class="catalog-category" data-catalog-category="<c:out value='${categoria.id}' />"><h4><c:out value="${categoria.titulo}" /></h4><div>
-                  <c:if test="${categoria.id eq 'disposicion'}"><button type="button" class="boton-catalogo-especial catalog-button" data-tipo-especial="destacamentos"><span>Destacamentos</span><span class="catalog-button-points">0 pts</span></button><button type="button" class="boton-catalogo-especial catalog-button" data-tipo-especial="disposicion"><span>Disposición</span><span class="catalog-button-points">0 pts</span></button></c:if>
+                  <c:if test="${categoria.id eq 'disposicion'}">
+                    <p class="page-subtitle">Selecciona los destacamentos de tu ejército y después su disposición.</p>
+                    <button type="button" class="boton-catalogo-especial catalog-button" data-tipo-especial="destacamentos"><span>Seleccionar destacamentos</span><span class="catalog-button-points">DP</span></button>
+                    <button type="button" class="boton-catalogo-especial catalog-button" data-tipo-especial="disposicion"><span>Seleccionar disposición</span><span class="catalog-button-points">0 pts</span></button>
+                  </c:if>
                   <c:forEach var="unidad" items="${categoria.unidades}">
                     <button type="button" class="boton-catalogo-unidad catalog-button" data-nombre="<c:out value='${unidad.nombre}'/>" data-roles="<c:out value='${unidad.roles}'/>" data-puntos="<c:out value='${unidad.puntos}'/>" data-puntos-base="<c:out value='${unidad.puntosBase}'/>" data-categoria="<c:out value='${unidad.categoria}'/>" data-armas="<c:out value='${unidad.armas}'/>" data-palabras-clave-faccion="<c:out value='${unidad.palabrasClaveFaccion}'/>" data-palabras-clave="<c:out value='${unidad.palabrasClave}'/>" data-configuracion-json="<c:out value='${unidad.configuracionJson}'/>" data-es-legend="${unidad.legend}" data-es-fortificacion="${unidad.fortificacion}" data-es-aliada="${unidad.aliada}" data-battleline="${unidad.battleline}" data-epic-hero="${unidad.epicHero}" data-character="${unidad.character}" data-leader="${unidad.leader}" data-support="${unidad.support}" data-compatibles-json="<c:out value='${unidad.compatiblesJson}'/>"><span><c:out value="${unidad.nombre}" /></span><span class="catalog-button-points"><c:out value="${unidad.puntosBase}" /> pts</span></button>
                   </c:forEach>
@@ -76,6 +80,6 @@
       </main>
     </div>
   </div>
-  <script src="/js/creador-listas-40k.js?v=4"></script>
+  <script src="/js/creador-listas-40k.js?v=5"></script>
 </body>
 </html>

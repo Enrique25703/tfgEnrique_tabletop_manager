@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Imagen genérica de comunidad">
+  <rect width="256" height="256" rx="40" fill="#14243a"/>
+  <circle cx="128" cy="82" r="38" fill="#7ea6d2"/>
+  <circle cx="65" cy="112" r="27" fill="#4f7fb8"/>
+  <circle cx="191" cy="112" r="27" fill="#4f7fb8"/>
+  <path d="M55 211c3-48 28-76 73-76s70 28 73 76" fill="#7ea6d2"/>
+  <path d="M18 211c2-35 18-57 47-57 15 0 28 6 36 17-12 10-20 23-24 40zm220 0c-2-35-18-57-47-57-15 0-28 6-36 17 12 10 20 23 24 40z" fill="#4f7fb8"/>
+</svg>

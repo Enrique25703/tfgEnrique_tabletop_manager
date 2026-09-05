@@ -28,6 +28,7 @@ public class NotificacionService {
     private static final String ESTADO_ACEPTADA = "ACEPTADA";
     private static final String ESTADO_RECHAZADA = "RECHAZADA";
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FORMATO_FECHA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
 
     private final NotificacionUsuarioRepository notificacionUsuarioRepository;
     private final UsuarioRepository usuarioRepository;
@@ -89,9 +90,23 @@ public class NotificacionService {
             throw new IllegalArgumentException("La notificacion ya ha sido gestionada.");
         }
 
+        if (TIPO_DESAFIO_PARTIDA.equalsIgnoreCase(normalizarTexto(notificacion.getTipo()))) {
+            cancelarDesafio(notificacion);
+        }
         notificacion.setEstado(ESTADO_RECHAZADA);
         notificacion.setRespondidoEn(LocalDateTime.now());
         notificacionUsuarioRepository.save(notificacion);
+    }
+
+    @Transactional
+    public void eliminarNotificacion(Long usuarioId, Long notificacionId) {
+        Usuario usuario = buscarUsuario(usuarioId);
+        NotificacionUsuario notificacion = buscarNotificacion(notificacionId, usuario);
+        if (ESTADO_PENDIENTE.equalsIgnoreCase(notificacion.getEstado())
+                && TIPO_DESAFIO_PARTIDA.equalsIgnoreCase(normalizarTexto(notificacion.getTipo()))) {
+            cancelarDesafio(notificacion);
+        }
+        notificacionUsuarioRepository.delete(notificacion);
     }
 
     @Transactional
@@ -148,7 +163,7 @@ public class NotificacionService {
             case TIPO_INVITACION_COMUNIDAD -> {
                 Long comunidadId = notificacion.getComunidad() == null ? null : notificacion.getComunidad().getId();
                 comunidadMiembroService.unirseAComunidad(usuario.getId(), comunidadId);
-                yield comunidadId == null ? "/comunidades" : "/comunidades?comunidadId=" + comunidadId;
+                yield comunidadId == null ? "/comunidades" : "/comunidades/" + comunidadId;
             }
             case TIPO_INVITACION_EVENTO -> {
                 Evento evento = notificacion.getEvento();
@@ -156,7 +171,7 @@ public class NotificacionService {
                     throw new IllegalArgumentException("La notificacion no referencia ningun evento.");
                 }
                 Long comunidadId = comunidadEventoService.unirseAEvento(usuario.getId(), evento.getId());
-                yield "/comunidades?comunidadId=" + comunidadId;
+                yield "/comunidades/" + comunidadId + "/eventos";
             }
             case TIPO_DESAFIO_PARTIDA -> {
                 Partida partida = notificacion.getPartida();
@@ -164,7 +179,9 @@ public class NotificacionService {
                     throw new IllegalArgumentException("La notificacion no referencia ninguna partida.");
                 }
                 aceptarDesafioPartida(usuario, partida);
-                yield "/partidas/" + partida.getId() + "/jugadores";
+                yield partida.getComunidad() == null
+                        ? "/comunidades"
+                        : "/comunidades/" + partida.getComunidad().getId() + "/eventos";
             }
             default -> throw new IllegalArgumentException("Tipo de notificacion no soportado.");
         };
@@ -184,6 +201,23 @@ public class NotificacionService {
         }
         partida.setActualizadoEn(LocalDateTime.now());
         partidaRepository.save(partida);
+        if (partida.getEvento() != null && !comunidadEventoService.usuarioInscrito(partida.getEvento(), usuario)) {
+            comunidadEventoService.unirseAEvento(usuario.getId(), partida.getEvento().getId());
+        }
+    }
+
+    private void cancelarDesafio(NotificacionUsuario notificacion) {
+        Partida partida = notificacion.getPartida();
+        if (partida == null || partida.getJugador2Usuario() != null) {
+            return;
+        }
+        partida.setEstado("CANCELADA");
+        partida.setActualizadoEn(LocalDateTime.now());
+        partidaRepository.save(partida);
+        if (partida.getEvento() != null) {
+            partida.getEvento().setEstado("CANCELADO");
+            partida.getEvento().setActualizadoEn(LocalDateTime.now());
+        }
     }
 
     private NotificacionUsuario buscarNotificacion(Long notificacionId, Usuario usuario) {
@@ -201,20 +235,32 @@ public class NotificacionService {
         String tipo = normalizarTexto(notificacion.getTipo()).toUpperCase(Locale.ROOT);
         String estado = normalizarTexto(notificacion.getEstado()).toUpperCase(Locale.ROOT);
         String emisor = notificacion.getEmisorUsuario() == null ? "Alguien" : notificacion.getEmisorUsuario().getNombreUsuario();
+        Partida partida = notificacion.getPartida();
+        String titulo = switch (tipo) {
+            case TIPO_INVITACION_COMUNIDAD -> "Invitacion a comunidad";
+            case TIPO_INVITACION_EVENTO -> "Invitacion a evento";
+            case TIPO_DESAFIO_PARTIDA -> "Desafio de " + emisor;
+            default -> "Notificacion";
+        };
         String mensaje = switch (tipo) {
             case TIPO_INVITACION_COMUNIDAD -> emisor + " te ha invitado a la comunidad "
                     + nombreComunidad(notificacion.getComunidad()) + ".";
             case TIPO_INVITACION_EVENTO -> emisor + " te ha invitado a un evento "
                     + nombreEvento(notificacion.getEvento()) + " con fecha " + fechaEvento(notificacion.getEvento()) + ".";
-            case TIPO_DESAFIO_PARTIDA -> emisor + " te ha desafiado a una partida con fecha "
-                    + fechaPartida(notificacion.getPartida()) + ".";
+            case TIPO_DESAFIO_PARTIDA -> mensajeDesafio(emisor, notificacion.getPartida());
             default -> "Tienes una notificacion pendiente.";
         };
 
         return new NotificacionItemView(
                 notificacion.getId(),
+                titulo,
                 mensaje,
                 notificacion.getMensajeExtra(),
+                tipo,
+                TIPO_DESAFIO_PARTIDA.equals(tipo) ? emisor : "",
+                TIPO_DESAFIO_PARTIDA.equals(tipo) ? formatoPartida(partida) : "",
+                TIPO_DESAFIO_PARTIDA.equals(tipo) ? fechaPartida(partida) : "",
+                TIPO_DESAFIO_PARTIDA.equals(tipo) ? lugarPartida(partida) : "",
                 ESTADO_PENDIENTE.equalsIgnoreCase(estado),
                 estado
         );
@@ -237,7 +283,25 @@ public class NotificacionService {
         if (fecha == null && partida != null) {
             fecha = partida.getCreadoEn();
         }
-        return fecha == null ? "sin fecha" : FORMATO_FECHA.format(fecha);
+        return fecha == null ? "sin fecha" : FORMATO_FECHA_HORA.format(fecha);
+    }
+
+    private String mensajeDesafio(String emisor, Partida partida) {
+        return emisor + " te desafía a un duelo.";
+    }
+
+    private String formatoPartida(Partida partida) {
+        return partida == null || partida.getSistemaJuego() == null
+                ? "Sin especificar"
+                : partida.getSistemaJuego().getNombre();
+    }
+
+    private String lugarPartida(Partida partida) {
+        if (partida == null || partida.getEvento() == null) {
+            return "Sin especificar";
+        }
+        String lugar = normalizarTexto(partida.getEvento().getUbicacion());
+        return lugar.isBlank() ? "Sin especificar" : lugar;
     }
 
     private String normalizarTexto(String texto) {
@@ -249,8 +313,14 @@ public class NotificacionService {
 
     public record NotificacionItemView(
             Long id,
+            String titulo,
             String mensaje,
             String mensajeExtra,
+            String tipo,
+            String retador,
+            String formato,
+            String fecha,
+            String lugar,
             boolean pendiente,
             String estado
     ) {

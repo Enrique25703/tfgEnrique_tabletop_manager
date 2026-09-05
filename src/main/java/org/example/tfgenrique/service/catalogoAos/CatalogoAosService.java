@@ -168,7 +168,13 @@ public class CatalogoAosService {
         if (ejercito != null) {
             List<UnidadCatalogoResumenView> unidades = new ArrayList<>();
             for (Unidad40k unidad : ejercito.unidades()) {
-                unidades.add(new UnidadCatalogoResumenView(valorSeguro(unidad.nombre())));
+                unidades.add(new UnidadCatalogoResumenView(
+                        valorSeguro(unidad.nombre()),
+                        valorSeguro(unidad.puntos()),
+                        valorSeguro(unidad.roles()),
+                        valorSeguro(unidad.palabrasClaveFaccion()),
+                        valorSeguro(unidad.palabrasClave())
+                ));
             }
             detalle = new EjercitoCatalogoDetalleView(
                     valorSeguro(ejercito.faccion()),
@@ -220,6 +226,10 @@ public class CatalogoAosService {
                 valorSeguro(faccionSeleccionada),
                 valorSeguro(ejercitoSeleccionado),
                 valorSeguro(unidad.nombre()),
+                valorSeguro(unidad.puntos()),
+                valorSeguro(unidad.roles()),
+                valorSeguro(unidad.palabrasClaveFaccion()),
+                valorSeguro(unidad.palabrasClave()),
                 perfiles,
                 armas,
                 List.copyOf(estadisticas),
@@ -282,7 +292,7 @@ public class CatalogoAosService {
         String nombreEjercito = partesNombre.length == 2 ? partesNombre[1].trim() : archivoCatalogo.nombre().trim();
 
         // LinkedHashMap mantiene orden de insercion y permite deduplicar por id.
-        Map<String, Element> elementosUnidad = new LinkedHashMap<>();
+        Map<String, UnidadCatalogoResuelta> elementosUnidad = new LinkedHashMap<>();
         agregarUnidadesDeCatalogo(
                 archivoCatalogo,
                 unidadesRaizPorId,
@@ -293,7 +303,12 @@ public class CatalogoAosService {
 
         // Una vez reunidos los nodos XML de unidad, se transforman a objetos de vista.
         List<Unidad40k> unidades = elementosUnidad.values().stream()
-                .map(unidad -> leerUnidad(unidad, selectionEntriesPorId, selectionEntryGroupsPorId))
+                .map(unidad -> leerUnidad(
+                        unidad.entradaUnidad(),
+                        unidad.enlaceCatalogo(),
+                        selectionEntriesPorId,
+                        selectionEntryGroupsPorId
+                ))
                 .sorted(Comparator.comparing(Unidad40k::nombre, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -304,7 +319,7 @@ public class CatalogoAosService {
             ArchivoCatalogo archivoCatalogo,
             Map<String, Element> unidadesRaizPorId,
             Map<String, ArchivoCatalogo> archivosCatalogoPorId,
-            Map<String, Element> elementosUnidad,
+            Map<String, UnidadCatalogoResuelta> elementosUnidad,
             Set<String> idsCatalogoVisitados
     ) {
         // Evita ciclos cuando varios catalogos se importan entre si.
@@ -315,7 +330,10 @@ public class CatalogoAosService {
         // Primero añade las unidades declaradas directamente dentro del catalogo actual.
         for (Element unidadRaiz : archivoCatalogo.unidadesRaiz()) {
             if (esUnidadVisible(unidadRaiz)) {
-                elementosUnidad.put(unidadRaiz.getAttribute("id"), unidadRaiz);
+                elementosUnidad.putIfAbsent(
+                        unidadRaiz.getAttribute("id"),
+                        new UnidadCatalogoResuelta(unidadRaiz, null)
+                );
             }
         }
 
@@ -323,7 +341,12 @@ public class CatalogoAosService {
         for (Element enlaceUnidad : archivoCatalogo.enlacesRaiz()) {
             Element unidadDestino = unidadesRaizPorId.get(enlaceUnidad.getAttribute("targetId"));
             if (unidadDestino != null && esUnidadVisible(unidadDestino)) {
-                elementosUnidad.put(unidadDestino.getAttribute("id"), unidadDestino);
+                // En AoS los perfiles suelen residir en una libreria compartida, pero el
+                // coste actualizado se declara en el entryLink del catalogo de faccion.
+                // Se conservan ambos nodos para no perder los puntos al resolver el enlace.
+                String idUnidad = unidadDestino.getAttribute("id");
+                UnidadCatalogoResuelta candidata = new UnidadCatalogoResuelta(unidadDestino, enlaceUnidad);
+                elementosUnidad.compute(idUnidad, (id, existente) -> elegirUnidadConCoste(existente, candidata));
             }
         }
 
@@ -351,6 +374,20 @@ public class CatalogoAosService {
                 && !"Lores".equals(nombre)
                 && !"Regiments of Renown".equals(nombre)
                 && !nombre.startsWith("Path to Glory");
+    }
+
+    private UnidadCatalogoResuelta elegirUnidadConCoste(
+            UnidadCatalogoResuelta existente,
+            UnidadCatalogoResuelta candidata
+    ) {
+        if (existente == null) {
+            return candidata;
+        }
+        boolean candidataTieneCoste = !resolverPuntosUnidad(
+                candidata.entradaUnidad(), candidata.enlaceCatalogo()).isEmpty();
+        boolean existenteTieneCoste = !resolverPuntosUnidad(
+                existente.entradaUnidad(), existente.enlaceCatalogo()).isEmpty();
+        return candidataTieneCoste || !existenteTieneCoste ? candidata : existente;
     }
 
     private boolean esUnidadVisible(Element entrada) {
@@ -406,12 +443,13 @@ public class CatalogoAosService {
 
     private Unidad40k leerUnidad(
             Element entradaUnidad,
+            Element enlaceCatalogo,
             Map<String, Element> selectionEntriesPorId,
             Map<String, Element> selectionEntryGroupsPorId
     ) {
         // Una unidad puede tener varios costes repetidos o variantes.
         // Aqui se recogen los puntos positivos, sin duplicados, y ordenados.
-        List<Integer> puntos = leerPuntosUnidad(entradaUnidad);
+        List<Integer> puntos = resolverPuntosUnidad(entradaUnidad, enlaceCatalogo);
 
         Set<String> roles = new LinkedHashSet<>();
         Set<String> palabrasClave = new LinkedHashSet<>();
@@ -573,6 +611,11 @@ public class CatalogoAosService {
                 .distinct()
                 .sorted()
                 .toList();
+    }
+
+    List<Integer> resolverPuntosUnidad(Element entradaUnidad, Element enlaceCatalogo) {
+        List<Integer> puntosEnlace = enlaceCatalogo == null ? List.of() : leerPuntosUnidad(enlaceCatalogo);
+        return puntosEnlace.isEmpty() ? leerPuntosUnidad(entradaUnidad) : puntosEnlace;
     }
 
     private List<GrupoMiniaturas40k> leerGruposMiniaturas(
@@ -1303,13 +1346,23 @@ public class CatalogoAosService {
     ) {
     }
 
-    public record UnidadCatalogoResumenView(String nombre) {
+    public record UnidadCatalogoResumenView(
+            String nombre,
+            String puntos,
+            String roles,
+            String palabrasClaveFaccion,
+            String palabrasClave
+    ) {
     }
 
     public record InfoUnidad40kView(
             String faccionSeleccionada,
             String ejercitoSeleccionado,
             String nombreUnidad,
+            String puntos,
+            String roles,
+            String palabrasClaveFaccion,
+            String palabrasClave,
             String perfiles,
             String armas,
             List<EstadisticaUnidadView> estadisticas,
@@ -1336,6 +1389,9 @@ public class CatalogoAosService {
             Map<String, Element> selectionEntriesPorId,
             Map<String, Element> selectionEntryGroupsPorId
     ) {
+    }
+
+    private record UnidadCatalogoResuelta(Element entradaUnidad, Element enlaceCatalogo) {
     }
 
     public record Unidad40k(

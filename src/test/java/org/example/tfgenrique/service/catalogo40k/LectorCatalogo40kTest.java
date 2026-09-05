@@ -111,6 +111,44 @@ class LectorCatalogo40kTest {
     }
 
     @Test
+    void resuelveArmasDeEquipoYPerfilesCompartidosSinDuplicadosNiCiclos() throws Exception {
+        String ejercito = """
+                {"catalogue":{"id":"ejercito","name":"Imperium - Prueba",
+                  "entryLinks":[{"id":"u-link","type":"selectionEntry","targetId":"u"}],
+                  "catalogueLinks":[{"targetId":"lib"}]}}
+                """;
+        String biblioteca = """
+                {"catalogue":{"id":"lib","name":"Imperium - Prueba - Library","library":true,
+                  "sharedSelectionEntries":[
+                    {"id":"u","name":"Unidad","type":"unit",
+                     "profiles":[{"id":"espada","name":"Espada","typeName":"Melee Weapons",
+                       "characteristics":[{"name":"Range","$text":"Melee"},{"name":"WS","$text":"3+"}]}],
+                     "entryLinks":[{"type":"selectionEntryGroup","targetId":"grupo"}],
+                     "infoLinks":[{"type":"profile","targetId":"rifle"}]},
+                    {"id":"equipo","name":"Equipo","type":"upgrade",
+                     "infoLinks":[{"type":"profile","targetId":"rifle"}],
+                     "entryLinks":[{"type":"selectionEntryGroup","targetId":"grupo"}]}],
+                  "sharedSelectionEntryGroups":[{"id":"grupo","name":"Armas",
+                    "entryLinks":[{"type":"selectionEntry","targetId":"equipo"}]}],
+                  "sharedProfiles":[
+                    {"id":"rifle","name":"Rifle","typeName":"Ranged Weapons",
+                     "characteristics":[{"name":"Range","$text":"24 pulgadas"},
+                       {"name":"A","$text":"D6"},{"name":"BS","$text":"4+"},
+                       {"name":"S","$text":"5"},{"name":"AP","$text":"-1"},{"name":"D","$text":"2"}]},
+                    {"id":"ajena","name":"Arma de otra unidad","typeName":"Ranged Weapons"}]}}
+                """;
+        var catalogo = lector.leerCatalogo(crearZip(new ArchivoJson("ejercito.json", ejercito),
+                new ArchivoJson("biblioteca.json", biblioteca)));
+        var unidad = catalogo.buscarUnidad("Imperium", "Prueba", "Unidad");
+        assertEquals(2, unidad.armasDetalle().size());
+        var vista = new Catalogo40kService().prepararInfoUnidad("Imperium", "Prueba", unidad);
+        assertEquals("Rifle", vista.armasDistancia().get(0).nombre());
+        assertEquals("D6", vista.armasDistancia().get(0).ataques());
+        assertEquals("-1", vista.armasDistancia().get(0).penetracion());
+        assertEquals("Espada", vista.armasCuerpoACuerpo().get(0).nombre());
+    }
+
+    @Test
     void leeElCatalogoRealSiSeIndicaSuRuta() throws Exception {
         String rutaCatalogo = System.getProperty("catalogo40k.zip");
         assumeTrue(rutaCatalogo != null && !rutaCatalogo.isBlank());
@@ -124,6 +162,31 @@ class LectorCatalogo40kTest {
         assertNotNull(astraMilitarum);
         assertFalse(astraMilitarum.unidades().isEmpty());
         assertFalse(astraMilitarum.unidades().get(0).perfilesDetalle().isEmpty());
+    }
+
+    @Test
+    void cargaDestacamentosDeLaBibliotecaDelEjercitoSeleccionado() throws Exception {
+        String ejercito = """
+                {"catalogue":{"id":"ejercito","name":"Imperium - Prueba",
+                  "catalogueLinks":[{"targetId":"lib"}]}}
+                """;
+        String biblioteca = """
+                {"catalogue":{"id":"lib","name":"Imperium - Prueba - Library","library":true,
+                  "sharedSelectionEntryGroups":[{"name":"Detachments","selectionEntries":[
+                    {"id":"dest-1","name":"Destacamento de prueba",
+                     "costs":[{"name":"Detachment Points","value":2}],
+                     "categoryLinks":[{"name":"Take and Hold"}],
+                     "rules":[{"name":"Disciplina","description":"Regla de prueba"}]},
+                    {"id":"oculto","name":"No seleccionable","hidden":true}]}]}}
+                """;
+        var catalogo = lector.leerCatalogo(crearZip(new ArchivoJson("ejercito.json", ejercito),
+                new ArchivoJson("biblioteca.json", biblioteca)));
+        var destacamentos = catalogo.buscarReglasEjercito("Imperium", "Prueba").destacamentos();
+        assertEquals(1, destacamentos.size());
+        assertEquals("dest-1", destacamentos.get(0).id());
+        assertEquals(2, destacamentos.get(0).puntosDestacamento());
+        assertEquals(java.util.List.of("Take and Hold"), destacamentos.get(0).disposiciones());
+        assertTrue(catalogo.buscarReglasEjercito("Otra faccion", "Otro ejercito").destacamentos().isEmpty());
     }
 
     private ByteArrayInputStream crearZip(ArchivoJson... archivos) throws Exception {

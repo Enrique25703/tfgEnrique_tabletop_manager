@@ -1,6 +1,7 @@
 package org.example.tfgenrique.config;
 
 import org.example.tfgenrique.service.user.NotificacionService;
+import org.example.tfgenrique.service.comunidadservice.ComunidadImagenService;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -11,9 +12,11 @@ import jakarta.servlet.http.HttpSession;
 public class GlobalModelAttributes {
 
     private final NotificacionService notificacionService;
+    private final ComunidadImagenService comunidadImagenService;
 
-    public GlobalModelAttributes(NotificacionService notificacionService) {
+    public GlobalModelAttributes(NotificacionService notificacionService, ComunidadImagenService comunidadImagenService) {
         this.notificacionService = notificacionService;
+        this.comunidadImagenService = comunidadImagenService;
     }
 
     @ModelAttribute("notificacionesHeader")
@@ -35,6 +38,11 @@ public class GlobalModelAttributes {
         }
         String query = request.getQueryString();
         return (query == null || query.isBlank()) ? uri : uri + "?" + query;
+    }
+
+    @ModelAttribute("imagenesComunidad")
+    public java.util.List<ComunidadImagenService.ImagenComunidadView> imagenesComunidad() {
+        return comunidadImagenService.cargarImagenes();
     }
 
     private Long obtenerUsuarioId(HttpSession session) {

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 @Service
 public class Catalogo40kService {
@@ -133,8 +134,47 @@ public class Catalogo40kService {
                 perfiles,
                 armas,
                 List.copyOf(estadisticas),
-                List.copyOf(habilidades)
+                List.copyOf(habilidades),
+                prepararArmas(unidad.armasDetalle(), false),
+                prepararArmas(unidad.armasDetalle(), true)
         );
+    }
+
+    private List<ArmaUnidadView> prepararArmas(List<PerfilArma40k> perfiles, boolean cuerpoACuerpo) {
+        if (perfiles == null) {
+            return List.of();
+        }
+        return perfiles.stream().filter(perfil -> {
+            String tipo = valorSeguro(perfil.tipo()).toLowerCase(Locale.ROOT);
+            String rango = valorArma(perfil, "Range", "Rango", "Alcance");
+            boolean melee = tipo.contains("melee") || tipo.contains("cuerpo a cuerpo")
+                    || "Melee".equalsIgnoreCase(rango);
+            return melee == cuerpoACuerpo;
+        }).map(perfil -> new ArmaUnidadView(
+                valorSeguro(perfil.nombre()),
+                valorArma(perfil, "Range", "Rango", "Alcance"),
+                valorArma(perfil, "A", "Attacks", "Ataques"),
+                cuerpoACuerpo
+                        ? valorArma(perfil, "WS", "Weapon Skill", "HA", "Hit", "BS")
+                        : valorArma(perfil, "BS", "Ballistic Skill", "HP", "Hit", "WS"),
+                valorArma(perfil, "S", "Strength", "Fuerza"),
+                valorArma(perfil, "AP", "Armour Penetration", "Armor Penetration", "FP"),
+                valorArma(perfil, "D", "Damage", "Daño")
+        )).toList();
+    }
+
+    private String valorArma(PerfilArma40k perfil, String... nombres) {
+        if (perfil.estadisticas() != null) {
+            for (String nombre : nombres) {
+                for (Estadistica40k estadistica : perfil.estadisticas()) {
+                    if (nombre.equalsIgnoreCase(valorSeguro(estadistica.nombre()))
+                            && !valorSeguro(estadistica.valor()).isBlank()) {
+                        return estadistica.valor().trim();
+                    }
+                }
+            }
+        }
+        return "—";
     }
 
     private String valorSeguro(String texto) {
@@ -291,7 +331,15 @@ public class Catalogo40kService {
             String perfiles,
             String armas,
             List<EstadisticaUnidadView> estadisticas,
-            List<HabilidadUnidadView> habilidades
+            List<HabilidadUnidadView> habilidades,
+            List<ArmaUnidadView> armasDistancia,
+            List<ArmaUnidadView> armasCuerpoACuerpo
+    ) {
+    }
+
+    public record ArmaUnidadView(
+            String nombre, String rango, String ataques, String impacta,
+            String fuerza, String penetracion, String dano
     ) {
     }
 

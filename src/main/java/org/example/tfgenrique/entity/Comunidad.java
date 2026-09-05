@@ -21,6 +21,12 @@ public class Comunidad {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Column(columnDefinition = "text")
+    private String descripcion;
+
+    @Column(nullable = false, length = 20)
+    private String privacidad;
+
     @Column(nullable = false)
     private Boolean activo;
 
@@ -39,6 +45,10 @@ public class Comunidad {
     public void setNombre(String nombre) { this.nombre = nombre; }
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getPrivacidad() { return privacidad; }
+    public void setPrivacidad(String privacidad) { this.privacidad = privacidad; }
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
     public LocalDateTime getCreadoEn() { return creadoEn; }

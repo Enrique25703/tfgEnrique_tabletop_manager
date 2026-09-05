@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EventoRepository extends JpaRepository<Evento, Long> {
+public interface EventoRepository extends JpaRepository<Evento, Long>, EventoBloqueoRepository {
     List<Evento> findByComunidadOrderByInicioEnAsc(Comunidad comunidad);
+
+    List<Evento> findByComunidadAndEstadoNotOrderByInicioEnAsc(Comunidad comunidad, String estado);
 }

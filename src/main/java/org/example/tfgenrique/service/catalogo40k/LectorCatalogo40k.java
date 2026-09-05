@@ -96,6 +96,7 @@ public class LectorCatalogo40k {
         Map<String, Element> unidadesRaizPorId = new HashMap<>();
         Map<String, Element> selectionEntriesPorId = new HashMap<>();
         Map<String, Element> selectionEntryGroupsPorId = new HashMap<>();
+        Map<String, Element> perfilesPorId = new HashMap<>();
         Map<String, ArchivoCatalogo> archivosCatalogoPorId = new HashMap<>();
 
         for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
@@ -105,6 +106,7 @@ public class LectorCatalogo40k {
             }
             selectionEntriesPorId.putAll(archivoCatalogo.selectionEntriesPorId());
             selectionEntryGroupsPorId.putAll(archivoCatalogo.selectionEntryGroupsPorId());
+            perfilesPorId.putAll(archivoCatalogo.perfilesPorId());
         }
 
         for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
@@ -113,7 +115,8 @@ public class LectorCatalogo40k {
                     unidadesRaizPorId,
                     archivosCatalogoPorId,
                     selectionEntriesPorId,
-                    selectionEntryGroupsPorId
+                    selectionEntryGroupsPorId,
+                    perfilesPorId
             );
             if (ejercito != null) {
                 catalogoPorFaccion
@@ -203,7 +206,8 @@ public class LectorCatalogo40k {
                 obtenerEnlacesRaiz(catalogo),
                 obtenerIdsCatalogosImportados(catalogo),
                 indexarElementosPorId(catalogo, "selectionEntry"),
-                indexarElementosPorId(catalogo, "selectionEntryGroup")
+                indexarElementosPorId(catalogo, "selectionEntryGroup"),
+                indexarElementosPorId(catalogo, "profile")
         );
     }
 
@@ -212,7 +216,8 @@ public class LectorCatalogo40k {
             Map<String, Element> unidadesRaizPorId,
             Map<String, ArchivoCatalogo> archivosCatalogoPorId,
             Map<String, Element> selectionEntriesPorId,
-            Map<String, Element> selectionEntryGroupsPorId
+            Map<String, Element> selectionEntryGroupsPorId,
+            Map<String, Element> perfilesPorId
     ) {
         if (!esCatalogoSeleccionable(archivoCatalogo)) {
             return null;
@@ -232,7 +237,7 @@ public class LectorCatalogo40k {
         );
 
         List<Unidad40k> unidades = elementosUnidad.values().stream()
-                .map(unidad -> leerUnidad(unidad, selectionEntriesPorId, selectionEntryGroupsPorId))
+                .map(unidad -> leerUnidad(unidad, selectionEntriesPorId, selectionEntryGroupsPorId, perfilesPorId))
                 .sorted(Comparator.comparing(Unidad40k::nombre, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -335,7 +340,8 @@ public class LectorCatalogo40k {
     private Unidad40k leerUnidad(
             Element entradaUnidad,
             Map<String, Element> selectionEntriesPorId,
-            Map<String, Element> selectionEntryGroupsPorId
+            Map<String, Element> selectionEntryGroupsPorId,
+            Map<String, Element> perfilesPorId
     ) {
         List<Integer> puntos = lectorComposicion.leerPuntosUnidad(entradaUnidad);
 
@@ -395,11 +401,16 @@ public class LectorCatalogo40k {
             } else if ("Abilities".equalsIgnoreCase(tipoPerfil)) {
                 nombresHabilidades.add(nombrePerfil);
                 habilidades.add(new Habilidad40k(nombrePerfil, leerDescripcionPerfil(perfil)));
-            } else if (tipoPerfil != null && tipoPerfil.toLowerCase(Locale.ROOT).contains("weapons")) {
+            } else if (tipoPerfil.toLowerCase(Locale.ROOT).contains("weapon")) {
                 armas.add(nombrePerfil);
                 agregarPerfilArma(armasDetalle, nombrePerfil, tipoPerfil, leerEstadisticas(perfil));
             }
         }
+
+        // Las armas también pueden vivir en bibliotecas y enlazarse desde el equipo.
+        recopilarArmasEnlazadas(entradaUnidad, selectionEntriesPorId, selectionEntryGroupsPorId,
+                perfilesPorId, new LinkedHashSet<>(), armasDetalle);
+        armasDetalle.forEach(perfil -> armas.add(perfil.nombre()));
 
         return new Unidad40k(
                 entradaUnidad.getAttribute("name"),
@@ -417,6 +428,39 @@ public class LectorCatalogo40k {
                 gruposMiniaturas,
                 opcionesComposicion
         );
+    }
+
+    private void recopilarArmasEnlazadas(
+            Element elemento, Map<String, Element> entradas, Map<String, Element> grupos,
+            Map<String, Element> perfiles, Set<Element> visitados, List<PerfilArma40k> resultado
+    ) {
+        if (!visitados.add(elemento)) {
+            return;
+        }
+        String nombreLocal = elemento.getLocalName();
+        if ("profile".equals(nombreLocal)
+                && elemento.getAttribute("typeName").toLowerCase(Locale.ROOT).contains("weapon")
+                && !elemento.getAttribute("name").isBlank()) {
+            agregarPerfilArma(resultado, elemento.getAttribute("name"), elemento.getAttribute("typeName"),
+                    leerEstadisticas(elemento));
+        }
+        if ("entryLink".equals(nombreLocal) || "infoLink".equals(nombreLocal)) {
+            String destino = elemento.getAttribute("targetId");
+            Element enlazado = switch (elemento.getAttribute("type")) {
+                case "selectionEntry" -> entradas.get(destino);
+                case "selectionEntryGroup" -> grupos.get(destino);
+                case "profile" -> perfiles.get(destino);
+                default -> null;
+            };
+            if (enlazado != null) {
+                recopilarArmasEnlazadas(enlazado, entradas, grupos, perfiles, visitados, resultado);
+            }
+        }
+        for (Node hijo = elemento.getFirstChild(); hijo != null; hijo = hijo.getNextSibling()) {
+            if (hijo instanceof Element elementoHijo) {
+                recopilarArmasEnlazadas(elementoHijo, entradas, grupos, perfiles, visitados, resultado);
+            }
+        }
     }
 
     private void agregarPerfilUnidad(
@@ -566,7 +610,8 @@ public class LectorCatalogo40k {
             List<Element> enlacesRaiz,
             List<String> idsCatalogosImportados,
             Map<String, Element> selectionEntriesPorId,
-            Map<String, Element> selectionEntryGroupsPorId
+            Map<String, Element> selectionEntryGroupsPorId,
+            Map<String, Element> perfilesPorId
     ) {
     }
 

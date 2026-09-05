@@ -9,10 +9,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inscripciones_evento")
+@Table(name = "inscripciones_evento", uniqueConstraints = @UniqueConstraint(
+        name = "uk_inscripciones_evento_evento_usuario", columnNames = {"evento_id", "usuario_id"}))
 public class InscripcionEvento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

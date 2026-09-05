@@ -12,29 +12,56 @@ public class ComunidadService {
     private final ComunidadMiembroService comunidadMiembroService;
     private final ComunidadEventoService comunidadEventoService;
     private final ComunidadInvitacionService comunidadInvitacionService;
+    private final ComunidadSolicitudService comunidadSolicitudService;
 
     public ComunidadService(
             ComunidadViewService comunidadViewService,
             ComunidadMiembroService comunidadMiembroService,
             ComunidadEventoService comunidadEventoService,
-            ComunidadInvitacionService comunidadInvitacionService
+            ComunidadInvitacionService comunidadInvitacionService,
+            ComunidadSolicitudService comunidadSolicitudService
     ) {
         this.comunidadViewService = comunidadViewService;
         this.comunidadMiembroService = comunidadMiembroService;
         this.comunidadEventoService = comunidadEventoService;
         this.comunidadInvitacionService = comunidadInvitacionService;
+        this.comunidadSolicitudService = comunidadSolicitudService;
     }
 
     public ComunidadPaginaView prepararPagina(Long usuarioId, Long comunidadId) {
         return comunidadViewService.prepararPagina(usuarioId, comunidadId);
     }
 
-    public Long crearComunidad(Long usuarioId, String nombreComunidad) {
-        return comunidadMiembroService.crearComunidad(usuarioId, nombreComunidad);
+    public EventosCercanosPaginaView prepararEventosCercanos(Long usuarioId) {
+        return comunidadViewService.prepararEventosCercanos(usuarioId);
+    }
+
+    public MisComunidadesPaginaView prepararMisComunidades(Long usuarioId) {
+        return comunidadViewService.prepararMisComunidades(usuarioId);
+    }
+
+    public DescubrirComunidadesPaginaView prepararDescubrirComunidades(
+            Long usuarioId,
+            Long comunidadId,
+            String busqueda
+    ) {
+        return comunidadViewService.prepararDescubrirComunidades(usuarioId, comunidadId, busqueda);
+    }
+
+    public Long crearComunidad(Long usuarioId, String nombreComunidad, String descripcion) {
+        return comunidadMiembroService.crearComunidad(usuarioId, nombreComunidad, descripcion);
+    }
+
+    public Long crearComunidad(Long usuarioId, String nombreComunidad, String descripcion, String logoUrl) {
+        return comunidadMiembroService.crearComunidad(usuarioId, nombreComunidad, descripcion, logoUrl);
     }
 
     public Long unirseAComunidad(Long usuarioId, Long comunidadId) {
-        return comunidadMiembroService.unirseAComunidad(usuarioId, comunidadId);
+        return comunidadSolicitudService.solicitarOUnirse(usuarioId, comunidadId).comunidadId();
+    }
+
+    public ComunidadSolicitudService.ResultadoUnion solicitarOUnirse(Long usuarioId, Long comunidadId) {
+        return comunidadSolicitudService.solicitarOUnirse(usuarioId, comunidadId);
     }
 
     public Long crearEvento(Long usuarioId, Long comunidadId, CrearEventoRequest request) {
@@ -50,12 +77,20 @@ public class ComunidadService {
     }
 
     public static class CrearEventoRequest {
+        private String titulo;
+        private String descripcion;
         private LocalDateTime fecha;
         private Integer numeroRondas;
+        private Integer maxParticipantes;
         private String lugar;
         private String formatoJuego;
         private Double latitud;
         private Double longitud;
+
+        public String getTitulo() { return titulo; }
+        public void setTitulo(String titulo) { this.titulo = titulo; }
+        public String getDescripcion() { return descripcion; }
+        public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
         public LocalDateTime getFecha() {
             return fecha;
@@ -72,6 +107,9 @@ public class ComunidadService {
         public void setNumeroRondas(Integer numeroRondas) {
             this.numeroRondas = numeroRondas;
         }
+
+        public Integer getMaxParticipantes() { return maxParticipantes; }
+        public void setMaxParticipantes(Integer maxParticipantes) { this.maxParticipantes = maxParticipantes; }
 
         public String getLugar() {
             return lugar;
@@ -145,22 +183,87 @@ public class ComunidadService {
         }
     }
 
+    public record EventosCercanosPaginaView(
+            String nombreUsuario,
+            int totalComunidades,
+            int totalSugerencias,
+            List<EventoActualView> eventosProximos
+    ) {
+        public int totalEventosProximos() {
+            return eventosProximos.size();
+        }
+    }
+
+    public record MisComunidadesPaginaView(
+            String nombreUsuario,
+            List<ComunidadResumenView> comunidades
+    ) {
+        public int totalComunidades() {
+            return comunidades.size();
+        }
+    }
+
+    public record DescubrirComunidadesPaginaView(
+            String nombreUsuario,
+            String busqueda,
+            List<ComunidadDescubrimientoView> comunidades,
+            ComunidadDetalleDescubrimientoView seleccionada
+    ) {
+        public int totalComunidades() {
+            return comunidades.size();
+        }
+    }
+
+    public record ComunidadDescubrimientoView(
+            Long id,
+            String nombre,
+            String descripcion,
+            String logoUrl,
+            boolean privada,
+            int totalMiembros,
+            int totalEventos,
+            List<String> juegos,
+            boolean solicitudPendiente
+    ) {
+    }
+
+    public record ComunidadDetalleDescubrimientoView(
+            ComunidadDescubrimientoView comunidad,
+            List<EventoDescubrimientoView> proximosEventos
+    ) {
+    }
+
+    public record EventoDescubrimientoView(
+            Long id,
+            String titulo,
+            String dia,
+            String mes,
+            String fecha,
+            String formato,
+            String ubicacion,
+            Integer plazasDisponibles
+    ) {
+    }
+
     public static class ComunidadPaginaView {
         private final String nombreUsuario;
         private final List<ComunidadResumenView> misComunidades;
         private final List<ComunidadResumenView> comunidadesDisponibles;
         private final ComunidadDetalleView comunidadSeleccionada;
+        private final List<EventoActualView> eventosProximos;
 
         public ComunidadPaginaView(
                 String nombreUsuario,
                 List<ComunidadResumenView> misComunidades,
                 List<ComunidadResumenView> comunidadesDisponibles,
-                ComunidadDetalleView comunidadSeleccionada
+                ComunidadDetalleView comunidadSeleccionada,
+                List<EventoActualView> eventosProximos
         ) {
             this.nombreUsuario = nombreUsuario;
             this.misComunidades = misComunidades;
             this.comunidadesDisponibles = comunidadesDisponibles;
             this.comunidadSeleccionada = comunidadSeleccionada;
+            this.eventosProximos = eventosProximos;
         }
 
         public String getNombreUsuario() {
@@ -178,19 +281,114 @@ public class ComunidadService {
         public ComunidadDetalleView getComunidadSeleccionada() {
             return comunidadSeleccionada;
         }
+
+        public List<EventoActualView> getEventosProximos() {
+            return eventosProximos;
+        }
+
+        public int getTotalComunidades() {
+            return misComunidades.size();
+        }
+
+        public int getTotalEventosProximos() {
+            return eventosProximos.size();
+        }
+
+        public int getTotalSugerencias() {
+            return comunidadesDisponibles.size();
+        }
+    }
+
+    public static class EventoActualView {
+        private final Long id;
+        private final String titulo;
+        private final String fecha;
+        private final String hora;
+        private final String formato;
+        private final String codigoFormato;
+        private final String ubicacion;
+        private final String latitud;
+        private final String longitud;
+        private final boolean tieneCoordenadas;
+        private final String comunidad;
+        private final String organizador;
+        private final int rondas;
+        private final String descripcion;
+
+        public EventoActualView(
+                Long id,
+                String titulo,
+                String fecha,
+                String hora,
+                String formato,
+                String codigoFormato,
+                String ubicacion,
+                String latitud,
+                String longitud,
+                boolean tieneCoordenadas,
+                String comunidad,
+                String organizador,
+                int rondas,
+                String descripcion
+        ) {
+            this.id = id;
+            this.titulo = titulo;
+            this.fecha = fecha;
+            this.hora = hora;
+            this.formato = formato;
+            this.codigoFormato = codigoFormato;
+            this.ubicacion = ubicacion;
+            this.latitud = latitud;
+            this.longitud = longitud;
+            this.tieneCoordenadas = tieneCoordenadas;
+            this.comunidad = comunidad;
+            this.organizador = organizador;
+            this.rondas = rondas;
+            this.descripcion = descripcion;
+        }
+
+        public Long getId() { return id; }
+        public String getTitulo() { return titulo; }
+        public String getFecha() { return fecha; }
+        public String getHora() { return hora; }
+        public String getFormato() { return formato; }
+        public String getCodigoFormato() { return codigoFormato; }
+        public String getUbicacion() { return ubicacion; }
+        public String getLatitud() { return latitud; }
+        public String getLongitud() { return longitud; }
+        public boolean isTieneCoordenadas() { return tieneCoordenadas; }
+        public String getComunidad() { return comunidad; }
+        public String getOrganizador() { return organizador; }
+        public int getRondas() { return rondas; }
+        public String getDescripcion() { return descripcion; }
     }
 
     public static class ComunidadResumenView {
         private final Long id;
         private final String nombre;
+        private final String descripcion;
+        private final String logoUrl;
         private final String rolUsuario;
+        private final boolean privada;
         private final int totalMiembros;
         private final int totalEventos;
 
-        public ComunidadResumenView(Long id, String nombre, String rolUsuario, int totalMiembros, int totalEventos) {
+        public ComunidadResumenView(
+                Long id,
+                String nombre,
+                String descripcion,
+                String logoUrl,
+                String rolUsuario,
+                boolean privada,
+                int totalMiembros,
+                int totalEventos
+        ) {
             this.id = id;
             this.nombre = nombre;
+            this.descripcion = descripcion;
+            this.logoUrl = logoUrl;
             this.rolUsuario = rolUsuario;
+            this.privada = privada;
             this.totalMiembros = totalMiembros;
             this.totalEventos = totalEventos;
         }
@@ -203,8 +401,20 @@ public class ComunidadService {
             return nombre;
         }
 
+        public String getDescripcion() {
+            return descripcion;
+        }
+
+        public String getLogoUrl() {
+            return logoUrl;
+        }
+
         public String getRolUsuario() {
             return rolUsuario;
+        }
+
+        public boolean isPrivada() {
+            return privada;
         }
 
         public int getTotalMiembros() {

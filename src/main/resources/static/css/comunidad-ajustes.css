@@ -1,0 +1,46 @@
+.community-settings-panel {
+  max-width: 760px;
+}
+
+.community-privacy-form {
+  padding: 0;
+}
+
+.privacy-options {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.privacy-options legend {
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.viewer-form .privacy-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(16, 29, 46, 0.82);
+  cursor: pointer;
+}
+
+.privacy-option input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.privacy-option span {
+  display: grid;
+  gap: 5px;
+}
+
+.privacy-option small {
+  color: var(--muted);
+  font-weight: 400;
+}

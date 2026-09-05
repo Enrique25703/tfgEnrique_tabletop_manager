@@ -99,6 +99,7 @@ public class PartidaService {
         return partida.getId();
     }
 
+    @Transactional(readOnly = true)
     public JugadoresView prepararJugadores(Long usuarioId, Long partidaId) {
         Partida partida = buscarPartidaUsuario(usuarioId, partidaId);
         Usuario usuario = partida.getCreadoPorUsuario();

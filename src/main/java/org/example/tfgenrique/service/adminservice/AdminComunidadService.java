@@ -18,6 +18,7 @@ import java.util.Locale;
 @Service
 public class AdminComunidadService {
     private static final String ROL_COMUNIDAD_PROPIETARIO = "PROPIETARIO";
+    private static final String ROL_COMUNIDAD_ADMINISTRADOR = "ADMINISTRADOR";
     private static final String ESTADO_AFILIACION_ACTIVA = "ACTIVA";
     private static final String ESTADO_AFILIACION_INACTIVA = "INACTIVA";
 
@@ -65,7 +66,7 @@ public class AdminComunidadService {
                         afiliacion.getUsuario().getId(),
                         valorSeguro(afiliacion.getUsuario().getNombreUsuario()),
                         valorSeguro(afiliacion.getRolComunidad()),
-                        !ROL_COMUNIDAD_PROPIETARIO.equalsIgnoreCase(afiliacion.getRolComunidad())
+                        !esAdministrador(afiliacion.getRolComunidad())
                 ))
                 .toList();
 
@@ -127,7 +128,7 @@ public class AdminComunidadService {
         if (!ESTADO_AFILIACION_ACTIVA.equalsIgnoreCase(valorSeguro(afiliacion.getEstadoAfiliacion()))) {
             throw new IllegalArgumentException("La afiliacion del miembro ya no esta activa.");
         }
-        if (ROL_COMUNIDAD_PROPIETARIO.equalsIgnoreCase(valorSeguro(afiliacion.getRolComunidad()))) {
+        if (esAdministrador(afiliacion.getRolComunidad())) {
             throw new IllegalArgumentException("No puedes expulsar al administrador de la comunidad.");
         }
 
@@ -175,5 +176,10 @@ public class AdminComunidadService {
 
     private String valorSeguro(String valor) {
         return valor == null ? "" : valor;
+    }
+
+    private boolean esAdministrador(String rol) {
+        return ROL_COMUNIDAD_PROPIETARIO.equalsIgnoreCase(valorSeguro(rol))
+                || ROL_COMUNIDAD_ADMINISTRADOR.equalsIgnoreCase(valorSeguro(rol));
     }
 }

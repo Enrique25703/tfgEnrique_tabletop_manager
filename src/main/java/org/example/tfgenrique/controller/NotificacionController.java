@@ -60,6 +60,26 @@ public class NotificacionController {
         return "redirect:" + resolverDestino(redirect, "/menu-principal");
     }
 
+    @PostMapping("/notificaciones/eliminar")
+    public String eliminar(
+            HttpSession session,
+            @RequestParam("notificacionId") Long notificacionId,
+            @RequestParam(value = "redirect", required = false) String redirect,
+            RedirectAttributes redirectAttributes
+    ) {
+        Long usuarioId = obtenerUsuarioId(session);
+        if (usuarioId == null) {
+            return "redirect:/";
+        }
+        try {
+            notificacionService.eliminarNotificacion(usuarioId, notificacionId);
+            redirectAttributes.addFlashAttribute("mensajeOk", "Notificacion eliminada.");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
+        }
+        return "redirect:" + resolverDestino(redirect, "/menu-principal");
+    }
+
     private String resolverDestino(String redirect, String defecto) {
         if (redirect == null || redirect.isBlank()) {
             return defecto;
