@@ -165,6 +165,7 @@
       puntosBase: parseInt(boton.dataset.puntosBase || "0", 10),
       categoria: boton.dataset.categoria || "otros",
       equipamientoResumen: crearResumenEquipamiento(boton.dataset.armas || ""),
+      perfilesArmas: parsearJsonSeguro(boton.dataset.perfilesArmasJson, []),
       configuracionEstado: crearEstadoConfiguracion(
         parsearJsonSeguro(boton.dataset.configuracionJson, { gruposMiniaturas: [], opcionesComposicion: [] })
       ),
@@ -479,6 +480,7 @@
     contenedor.dataset.compatibles = JSON.stringify(datosUnidad.compatibles || []);
     contenedor.dataset.warlord = "false";
     contenedor.dataset.equipamientoResumen = JSON.stringify(datosUnidad.equipamientoResumen || []);
+    contenedor.dataset.perfilesArmas = JSON.stringify(datosUnidad.perfilesArmas || []);
     contenedor.dataset.configuracionEstado = JSON.stringify(
       datosUnidad.configuracionEstado || { gruposMiniaturas: [], opcionesComposicion: [] }
     );
@@ -513,6 +515,7 @@
         puntosBase: parseInt(contenedor.dataset.puntosBaseOriginal || contenedor.dataset.puntosBase || "0", 10),
         categoria: contenedor.dataset.categoria || "",
         equipamientoResumen: parsearJsonSeguro(contenedor.dataset.equipamientoResumen, []),
+        perfilesArmas: parsearJsonSeguro(contenedor.dataset.perfilesArmas, []),
         configuracionEstado: clonarDatos(
           parsearJsonSeguro(contenedor.dataset.configuracionEstado, { gruposMiniaturas: [], opcionesComposicion: [] })
         ),
@@ -1332,6 +1335,7 @@
         categoria: unidades[i].dataset.categoria || "",
         tipoEspecial: unidades[i].dataset.tipoEspecial || "",
         notas: unidades[i].dataset.notas || "",
+        perfilesArmas: parsearJsonSeguro(unidades[i].dataset.perfilesArmas, []),
         configuracionMiniaturas: parsearJsonSeguro(
           unidades[i].dataset.configuracionEstado,
           { gruposMiniaturas: [], opcionesComposicion: [] }
@@ -1412,6 +1416,95 @@
     }
   }
 
+  function inicializarAsistente() {
+    const abrir = document.getElementById("abrirAsistente");
+    const cerrar = document.getElementById("cerrarAsistente");
+    const panel = document.getElementById("panelAsistente");
+    const formulario = document.getElementById("formAsistente");
+    const pregunta = document.getElementById("preguntaAsistente");
+    const botonEnviar = document.getElementById("enviarAsistente");
+    const estado = document.getElementById("estadoAsistente");
+    const mensajes = document.getElementById("mensajesAsistente");
+    const url = app.dataset.urlAsistente;
+    if (!abrir || !cerrar || !panel || !formulario || !pregunta || !url) return;
+
+    function mostrarPanel(visible) {
+      panel.hidden = !visible;
+      abrir.setAttribute("aria-expanded", String(visible));
+      if (visible) pregunta.focus();
+      else abrir.focus();
+    }
+
+    function agregarMensaje(tipo, texto) {
+      const mensaje = document.createElement("div");
+      mensaje.className = "assistant-message " + tipo;
+      mensaje.textContent = texto;
+      mensajes.appendChild(mensaje);
+      mensajes.scrollTop = mensajes.scrollHeight;
+      return mensaje;
+    }
+
+    function agregarRespuesta(analisis) {
+      const mensaje = agregarMensaje("bot", analisis.resumen || "He terminado el análisis.");
+      if (Array.isArray(analisis.fortalezas) && analisis.fortalezas.length) {
+        const titulo = document.createElement("strong");
+        titulo.textContent = "Puntos fuertes";
+        mensaje.appendChild(titulo);
+        mensaje.appendChild(crearListaMensajes(analisis.fortalezas));
+      }
+      if (Array.isArray(analisis.recomendaciones) && analisis.recomendaciones.length) {
+        const titulo = document.createElement("strong");
+        titulo.textContent = "Qué mejoraría";
+        mensaje.appendChild(titulo);
+        mensaje.appendChild(crearListaMensajes(analisis.recomendaciones));
+      }
+      mensajes.scrollTop = mensajes.scrollHeight;
+    }
+
+    function crearListaMensajes(elementos) {
+      const lista = document.createElement("ul");
+      elementos.forEach(function (texto) {
+        const elemento = document.createElement("li");
+        elemento.textContent = texto;
+        lista.appendChild(elemento);
+      });
+      return lista;
+    }
+
+    abrir.addEventListener("click", function () { mostrarPanel(panel.hidden); });
+    cerrar.addEventListener("click", function () { mostrarPanel(false); });
+    formulario.addEventListener("submit", async function (evento) {
+      evento.preventDefault();
+      const consulta = pregunta.value.trim();
+      agregarMensaje("user", consulta || "Analiza mi lista actual.");
+      pregunta.value = "";
+      estado.textContent = "Analizando las unidades...";
+      botonEnviar.disabled = true;
+      try {
+        const datos = new URLSearchParams();
+        datos.append("datosListaJson", JSON.stringify(construirPayloadLista()));
+        datos.append("pregunta", consulta);
+        const respuesta = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body: datos.toString()
+        });
+        const analisis = await respuesta.json();
+        if (!respuesta.ok) {
+          agregarMensaje("bot error", analisis.resumen || "No he podido analizar la lista.");
+        } else {
+          agregarRespuesta(analisis);
+        }
+      } catch (error) {
+        agregarMensaje("bot error", "No he podido conectar con el asistente. Inténtalo de nuevo.");
+      } finally {
+        estado.textContent = "";
+        botonEnviar.disabled = false;
+        pregunta.focus();
+      }
+    });
+  }
+
   document.querySelectorAll(".boton-catalogo-unidad").forEach(function (boton) {
     boton.addEventListener("click", function () {
       agregarUnidad(crearDatosUnidadDesdeBoton(boton));
@@ -1422,6 +1515,7 @@
   });
 
   inicializarFiltrosCatalogo();
+  inicializarAsistente();
   document.getElementById("unidadWarlord").addEventListener("change", function () {
     const activa = obtenerUnidadActiva();
     if (this.checked && activa) {

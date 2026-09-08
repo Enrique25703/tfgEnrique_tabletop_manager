@@ -14,15 +14,29 @@
         gap: 12px;
         align-items: center;
         margin-bottom: 18px;
+        flex-wrap: wrap;
       }
+
+      .page-panel, .round-header > *, .round-board > *,
+      .player-panel > *, .mission-card > *, .secondary-card > * {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+      }
+
+      .round-header > div:first-child { flex: 1 1 280px; }
+      .round-header .form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .round-header button { white-space: normal; }
 
       .round-board {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr);
         gap: 20px;
+        align-items: start;
       }
 
       .separator {
+        align-self: stretch;
         border-radius: 999px;
         background: var(--line-strong);
       }
@@ -38,6 +52,8 @@
 
       .player-panel {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
         gap: 14px;
       }
 
@@ -68,36 +84,54 @@
 
       .secondary-list {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 10px;
         margin-top: 10px;
       }
 
+      .cp-counter { margin: 0; padding: 16px; border: 1px solid var(--line-strong); border-radius: 16px; }
+      .cp-counter legend { padding: 0 6px; font-weight: 600; }
+      .cp-balance { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+      .cp-balance output { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .cp-row label, .mission-card > label, .secondary-card > label { display: grid; gap: 6px; min-width: 0; }
+      .cp-row input { min-width: 0; text-align: center; }
+      .cp-counter .page-subtitle { margin: 10px 0 0; font-size: 0.85rem; }
+      .secondary-card { display: grid; gap: 10px; }
+      .secondary-card .completed-toggle { display: flex; align-items: center; gap: 8px; }
+      .player-panel input[type="checkbox"], .popup input[type="checkbox"] { width: 18px; height: 18px; padding: 0; flex: 0 0 auto; accent-color: var(--accent); }
+      .mission-card h4, .secondary-card p { margin: 0 0 10px; }
+
       .popup {
-        display: none;
-        position: fixed;
-        inset: 6vh 50% auto auto;
-        z-index: 30;
         width: min(94vw, 680px);
         max-height: 88vh;
-        overflow: auto;
-        padding: 20px;
+        max-height: 88dvh;
+        overflow: hidden;
+        padding: 0;
         border: 1px solid var(--line);
         border-radius: 20px;
         background: var(--panel-soft);
+        color: var(--text);
         box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
-        transform: translateX(50%);
       }
 
-      .popup.visible {
-        display: block;
-      }
+      .popup[open] { display: flex; flex-direction: column; }
+      .popup::backdrop { background: rgba(0, 0, 0, 0.65); }
+      .popup-header { padding: 18px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+      .popup-header h3 { margin: 0 0 8px; }
+      #listaMisionesPopup { overflow-y: auto; min-height: 0; padding: 0 8px 12px; overscroll-behavior: contain; }
 
       .mission-option {
         display: grid;
         gap: 6px;
         padding: 12px;
         border-bottom: 1px solid var(--line);
+        grid-template-columns: 20px minmax(0, 1fr);
+        column-gap: 10px;
+        cursor: pointer;
+        overflow-wrap: anywhere;
       }
+      .mission-option > .mission-description, .mission-option > .mission-score { grid-column: 2; }
+      .mission-option:has(input:checked) { background: rgba(79, 127, 184, 0.15); }
 
       .popup-actions {
         display: flex;
@@ -115,6 +149,13 @@
           height: 2px;
         }
       }
+      @media (max-width: 540px) {
+        .page-content { padding: 8px; }
+        .page-panel { padding: 12px; }
+        .player-panel, .mission-card, .secondary-card { padding: 12px; border-radius: 12px; }
+        .round-header .form-actions { width: 100%; }
+        .round-header .form-actions > * { flex: 1 1 160px; text-align: center; }
+      }
     </style>
   </head>
   <body>
@@ -126,18 +167,21 @@
       <div class="app-main">
         <main class="page-content">
           <section class="page-panel">
+            <c:if test="${not empty mensajeError}">
+              <p class="note-box" role="alert"><c:out value="${mensajeError}" /></p>
+            </c:if>
             <form method="post" action="/partidas/${ronda.partida.id}/ronda/${ronda.numeroRonda}">
               <div class="round-header">
                 <div>
                   <h2 class="page-title">Ronda ${ronda.numeroRonda} de 5</h2>
                   <p class="page-subtitle">
                     <c:out value="${ronda.resumenConfiguracion.estiloJuego}" />
-                    Â· Mision: <c:out value="${ronda.resumenConfiguracion.mision}" />
+                    &middot; Mision: <c:out value="${ronda.resumenConfiguracion.mision}" />
                     <c:if test="${not empty ronda.resumenConfiguracion.layout}">
-                      Â· Layout: <c:out value="${ronda.resumenConfiguracion.layout}" />
+                      &middot; Layout: <c:out value="${ronda.resumenConfiguracion.layout}" />
                     </c:if>
                     <c:if test="${not empty ronda.resumenConfiguracion.despliegue}">
-                      Â· Despliegue: <c:out value="${ronda.resumenConfiguracion.despliegue}" />
+                      &middot; Despliegue: <c:out value="${ronda.resumenConfiguracion.despliegue}" />
                     </c:if>
                   </p>
                 </div>
@@ -151,7 +195,7 @@
                     </c:otherwise>
                   </c:choose>
                   <button class="button-primary" type="submit">
-                    <c:out value="${ronda.numeroRonda == 5 ? 'Ir al resultado final' : 'Guardar e ir a siguiente ronda'}" />
+                    <c:out value="${ronda.numeroRonda == 5 ? 'Ir al resultado final' : 'Siguiente ronda'}" />
                   </button>
                 </div>
               </div>
@@ -171,10 +215,15 @@
 
                   <c:choose>
                     <c:when test="${ronda.partida.mostrarCommandPoints}">
-                      <div class="cp-row">
-                        <label>CP inicio <input type="number" min="0" name="${ronda.izquierda.prefijo}CpInicio" value="${ronda.izquierda.cpInicio}" /></label>
-                        <label>CP fin <input type="number" min="0" name="${ronda.izquierda.prefijo}CpFin" value="${ronda.izquierda.cpFin}" /></label>
-                      </div>
+                      <fieldset class="cp-counter" data-cp-inicio="${ronda.izquierda.cpInicio}">
+                        <legend>Command Points (CP)</legend>
+                        <div class="cp-balance"><span>Disponibles</span><output class="cp-total" aria-live="polite">${ronda.izquierda.cpFin}</output></div>
+                        <div class="cp-row">
+                          <label>Gastados <input class="cp-spent" type="number" min="0" step="1" name="${ronda.izquierda.prefijo}CpGastados" value="${ronda.izquierda.cpGastados}" /></label>
+                          <label>Ganados <input class="cp-earned" type="number" min="0" step="1" name="${ronda.izquierda.prefijo}CpGanados" value="${ronda.izquierda.cpGanados}" /></label>
+                        </div>
+                        <p class="page-subtitle">En esta ronda &middot; Saldo inicial: ${ronda.izquierda.cpInicio} CP</p>
+                      </fieldset>
                     </c:when>
                     <c:otherwise>
                       <input type="hidden" name="${ronda.izquierda.prefijo}CpInicio" value="0" />
@@ -215,10 +264,15 @@
 
                   <c:choose>
                     <c:when test="${ronda.partida.mostrarCommandPoints}">
-                      <div class="cp-row">
-                        <label>CP inicio <input type="number" min="0" name="${ronda.derecha.prefijo}CpInicio" value="${ronda.derecha.cpInicio}" /></label>
-                        <label>CP fin <input type="number" min="0" name="${ronda.derecha.prefijo}CpFin" value="${ronda.derecha.cpFin}" /></label>
-                      </div>
+                      <fieldset class="cp-counter" data-cp-inicio="${ronda.derecha.cpInicio}">
+                        <legend>Command Points (CP)</legend>
+                        <div class="cp-balance"><span>Disponibles</span><output class="cp-total" aria-live="polite">${ronda.derecha.cpFin}</output></div>
+                        <div class="cp-row">
+                          <label>Gastados <input class="cp-spent" type="number" min="0" step="1" name="${ronda.derecha.prefijo}CpGastados" value="${ronda.derecha.cpGastados}" /></label>
+                          <label>Ganados <input class="cp-earned" type="number" min="0" step="1" name="${ronda.derecha.prefijo}CpGanados" value="${ronda.derecha.cpGanados}" /></label>
+                        </div>
+                        <p class="page-subtitle">En esta ronda &middot; Saldo inicial: ${ronda.derecha.cpInicio} CP</p>
+                      </fieldset>
                     </c:when>
                     <c:otherwise>
                       <input type="hidden" name="${ronda.derecha.prefijo}CpInicio" value="0" />
@@ -249,9 +303,15 @@
       </div>
     </div>
 
-    <div class="popup" id="popupSecundarias">
-      <h3>Elegir misiones secundarias</h3>
-      <p class="page-subtitle">Marca todas las secundarias que quieras o usa el boton para aÃ±adir una al azar.</p>
+    <dialog class="popup" id="popupSecundarias" aria-labelledby="tituloSecundarias">
+      <div class="popup-header">
+      <h3 id="tituloSecundarias">Elegir misiones secundarias</h3>
+      <p class="page-subtitle">Selecciona tus misiones o usa Randomizar para a&ntilde;adir una al azar.</p>
+      <div class="popup-actions">
+        <button class="button-primary" type="button" id="randomSecundaria" autofocus>Randomizar</button>
+        <button class="button-secondary" type="button" id="cerrarSecundarias">Cerrar</button>
+      </div>
+      </div>
       <div id="listaMisionesPopup">
         <c:forEach items="${ronda.misionesSecundarias}" var="mision">
           <label class="mission-option">
@@ -262,11 +322,7 @@
           </label>
         </c:forEach>
       </div>
-      <div class="popup-actions">
-        <button class="button-secondary" type="button" id="randomSecundaria">Randomizar</button>
-        <button class="button-secondary" type="button" id="cerrarSecundarias">Cerrar</button>
-      </div>
-    </div>
+    </dialog>
 
     <script>
       (function () {
@@ -275,6 +331,19 @@
         const botones = document.querySelectorAll(".abrir-secundarias");
         const cerrar = document.getElementById("cerrarSecundarias");
         const random = document.getElementById("randomSecundaria");
+
+        document.querySelectorAll(".cp-counter").forEach(function (contador) {
+          const ganados = contador.querySelector(".cp-earned");
+          const gastados = contador.querySelector(".cp-spent");
+          function actualizarCp() {
+            const saldo = Number(contador.dataset.cpInicio) + Number(ganados.value) - Number(gastados.value);
+            contador.querySelector(".cp-total").textContent = String(saldo);
+            gastados.setCustomValidity(saldo < 0 ? "No puedes gastar mas CP de los disponibles." : "");
+          }
+          ganados.addEventListener("input", actualizarCp);
+          gastados.addEventListener("input", actualizarCp);
+          actualizarCp();
+        });
 
         function panel(prefijo) {
           return document.querySelector('[data-player-panel="' + prefijo + '"]');
@@ -333,7 +402,7 @@
             tarjeta.innerHTML =
               "<strong></strong>" +
               "<p></p>" +
-              "<label><input type='checkbox' class='cumplida' /> Cumplida</label>" +
+              "<label class='completed-toggle'><input type='checkbox' class='cumplida' /> Cumplida</label>" +
               "<label>Puntos <input type='number' min='0' class='puntos-secundaria' /></label>";
 
             tarjeta.querySelector("strong").textContent = mision.titulo;
@@ -402,12 +471,14 @@
           boton.addEventListener("click", function () {
             prefijoActivo = boton.dataset.prefijo;
             marcarPopup(prefijoActivo);
-            popup.classList.add("visible");
+            popup.showModal();
+            document.getElementById("listaMisionesPopup").scrollTop = 0;
+            random.focus();
           });
         });
 
         cerrar.addEventListener("click", function () {
-          popup.classList.remove("visible");
+          popup.close();
         });
 
         popup.querySelectorAll(".mission-option input[type='checkbox']").forEach(function (check) {

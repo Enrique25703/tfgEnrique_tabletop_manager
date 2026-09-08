@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -27,6 +28,7 @@ import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Habilidad40
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.PerfilArma40k;
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.PerfilUnidad40k;
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Unidad40k;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
 
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,37 +37,60 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class ListaPdfService {
     private static final String FORMATO_40K = "WH40K_11";
+    private static final String FORMATO_AOS = "AOS_4";
 
     private final CreacionListasService creacionListasService;
     private final Catalogo40kService catalogo40kService;
+    private final CatalogoAosService catalogoAosService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ListaPdfService(
             CreacionListasService creacionListasService,
-            Catalogo40kService catalogo40kService
+            Catalogo40kService catalogo40kService,
+            CatalogoAosService catalogoAosService
     ) {
         this.creacionListasService = creacionListasService;
         this.catalogo40kService = catalogo40kService;
+        this.catalogoAosService = catalogoAosService;
     }
 
     public PdfGenerado generarPdf(String nombreUsuario, Long listaId) {
         ListaExportacionView lista = creacionListasService.obtenerListaParaExportar(nombreUsuario, listaId);
-        if (!FORMATO_40K.equals(lista.formatoJuego())) {
-            throw new IllegalArgumentException("La exportacion PDF esta disponible para listas de Warhammer 40,000.");
-        }
-
-        Catalogo40kData catalogo = catalogo40kService.getData();
-        if (catalogo == null) {
-            catalogo = catalogo40kService.actualizarCatalogo();
-        }
+        Function<String, DatosUnidadPdf> buscarUnidad = cargarCatalogo(lista);
 
         try {
-            List<UnidadPdf> unidades = leerUnidades(lista, catalogo);
+            List<UnidadPdf> unidades = leerUnidades(lista, buscarUnidad);
             byte[] contenido = crearDocumento(lista, unidades);
             return new PdfGenerado(crearNombreArchivo(lista.nombreLista()), contenido);
         } catch (IOException ex) {
             throw new IllegalStateException("No se ha podido generar el PDF de la lista.", ex);
         }
+    }
+
+    private Function<String, DatosUnidadPdf> cargarCatalogo(ListaExportacionView lista) {
+        if (FORMATO_40K.equals(lista.formatoJuego())) {
+            Catalogo40kData datos = catalogo40kService.getData();
+            final Catalogo40kData catalogo = datos == null ? catalogo40kService.actualizarCatalogo() : datos;
+            return nombre -> {
+                Unidad40k unidad = catalogo == null ? null : catalogo.buscarUnidad(lista.faccion(), lista.ejercito(), nombre);
+                return unidad == null ? null : new DatosUnidadPdf(
+                        unidad.estadisticas(), unidad.perfilesDetalle(), unidad.armasDetalle(),
+                        unidad.habilidadesDetalle(), unidad.palabrasClaveFaccion(), unidad.palabrasClave(), "", false);
+            };
+        }
+        if (FORMATO_AOS.equals(lista.formatoJuego())) {
+            var datos = catalogoAosService.getData();
+            final var catalogo = datos == null ? catalogoAosService.actualizarCatalogo() : datos;
+            return nombre -> {
+                var unidad = catalogo == null ? null : catalogo.buscarUnidad(lista.faccion(), lista.ejercito(), nombre);
+                return unidad == null ? null : new DatosUnidadPdf(
+                        unidad.estadisticas().stream().map(e -> new Estadistica40k(e.nombre(), e.valor())).toList(),
+                        List.of(), List.of(),
+                        unidad.habilidadesDetalle().stream().map(h -> new Habilidad40k(h.nombre(), h.descripcion())).toList(),
+                        unidad.palabrasClaveFaccion(), unidad.palabrasClave(), unidad.armas(), true);
+            };
+        }
+        throw new IllegalArgumentException("El formato de esta lista no admite exportacion PDF.");
     }
 
     private byte[] crearDocumento(ListaExportacionView lista, List<UnidadPdf> unidades) throws IOException {
@@ -91,7 +116,8 @@ public class ListaPdfService {
         lienzo.textoCentrado(lista.nombreLista() + " [" + lista.puntosActuales() + " pts]", 15, true);
         lienzo.saltar(12);
         lienzo.texto("Lista de ejercito [" + lista.puntosActuales() + "/" + lista.limitePuntos() + " pts]", 11, false);
-        lienzo.texto("Warhammer 40,000 - " + lista.faccion() + " - " + lista.ejercito(), 10, false);
+        String juego = FORMATO_AOS.equals(lista.formatoJuego()) ? "Age of Sigmar" : "Warhammer 40,000";
+        lienzo.texto(juego + " - " + lista.faccion() + " - " + lista.ejercito(), 10, false);
         lienzo.texto("Version " + lista.numeroVersion() + " - " + unidades.size() + " unidades", 10, false);
         lienzo.saltar(8);
 
@@ -128,7 +154,7 @@ public class ListaPdfService {
                 composicion
         );
 
-        Unidad40k datosCatalogo = unidad.datosCatalogo();
+        DatosUnidadPdf datosCatalogo = unidad.datosCatalogo();
         if (datosCatalogo == null) {
             lienzo.seccion("Datos de la unidad");
             lienzo.parClaveValor("Aviso", "No se ha encontrado esta unidad en el catalogo actual.");
@@ -136,32 +162,44 @@ public class ListaPdfService {
             return;
         }
 
-        List<PerfilUnidad40k> perfiles = datosCatalogo.perfilesDetalle();
-        if (perfiles == null || perfiles.isEmpty()) {
-            perfiles = List.of(new PerfilUnidad40k(unidad.nombre(), datosCatalogo.estadisticas()));
-        }
-        lienzo.seccion("Perfil de unidad");
-        List<List<String>> filasPerfil = new ArrayList<>();
-        for (PerfilUnidad40k perfil : perfiles) {
-            filasPerfil.add(List.of(
-                    perfil.nombre(),
-                    valorEstadistica(perfil.estadisticas(), "M", "Move"),
-                    valorEstadistica(perfil.estadisticas(), "T", "Toughness"),
-                    valorEstadistica(perfil.estadisticas(), "SV", "Save"),
-                    valorEstadistica(perfil.estadisticas(), "W", "Wounds"),
-                    valorEstadistica(perfil.estadisticas(), "LD", "Leadership"),
-                    valorEstadistica(perfil.estadisticas(), "OC", "Objective Control")
-            ));
-        }
-        lienzo.tabla(
-                List.of("UNIDAD", "M", "T", "SV", "W", "LD", "OC"),
-                new float[]{0.43f, 0.095f, 0.095f, 0.095f, 0.095f, 0.095f, 0.095f},
-                filasPerfil
-        );
+        if (datosCatalogo.esAos()) {
+            lienzo.seccion("Perfil de unidad");
+            lienzo.tabla(List.of("ESTADISTICA", "VALOR"), new float[]{0.5f, 0.5f},
+                    datosCatalogo.estadisticas().stream()
+                            .map(e -> List.of(e.nombre(), textoPorDefecto(e.valor(), "-"))).toList());
+            if (datosCatalogo.armasTexto() != null && !datosCatalogo.armasTexto().isBlank()) {
+                lienzo.seccion("Armas");
+                lienzo.tabla(List.of("ARMAS DEL CATALOGO"), new float[]{1f},
+                        List.of(List.of(datosCatalogo.armasTexto())));
+            }
+        } else {
+            List<PerfilUnidad40k> perfiles = datosCatalogo.perfilesDetalle();
+            if (perfiles == null || perfiles.isEmpty()) {
+                perfiles = List.of(new PerfilUnidad40k(unidad.nombre(), datosCatalogo.estadisticas()));
+            }
+            lienzo.seccion("Perfil de unidad");
+            List<List<String>> filasPerfil = new ArrayList<>();
+            for (PerfilUnidad40k perfil : perfiles) {
+                filasPerfil.add(List.of(
+                        perfil.nombre(),
+                        valorEstadistica(perfil.estadisticas(), "M", "Move"),
+                        valorEstadistica(perfil.estadisticas(), "T", "Toughness"),
+                        valorEstadistica(perfil.estadisticas(), "SV", "Save"),
+                        valorEstadistica(perfil.estadisticas(), "W", "Wounds"),
+                        valorEstadistica(perfil.estadisticas(), "LD", "Leadership"),
+                        valorEstadistica(perfil.estadisticas(), "OC", "Objective Control")
+                ));
+            }
+            lienzo.tabla(
+                    List.of("UNIDAD", "M", "T", "SV", "W", "LD", "OC"),
+                    new float[]{0.43f, 0.095f, 0.095f, 0.095f, 0.095f, 0.095f, 0.095f},
+                    filasPerfil
+            );
 
-        List<PerfilArma40k> armas = filtrarArmas(datosCatalogo.armasDetalle(), unidad.equipamiento());
-        dibujarArmas(lienzo, "Armas a distancia", armas, false);
-        dibujarArmas(lienzo, "Armas cuerpo a cuerpo", armas, true);
+            List<PerfilArma40k> armas = filtrarArmas(datosCatalogo.armasDetalle(), unidad.equipamiento());
+            dibujarArmas(lienzo, "Armas a distancia", armas, false);
+            dibujarArmas(lienzo, "Armas cuerpo a cuerpo", armas, true);
+        }
 
         if (datosCatalogo.habilidadesDetalle() != null && !datosCatalogo.habilidadesDetalle().isEmpty()) {
             lienzo.seccion("Habilidades");
@@ -221,7 +259,7 @@ public class ListaPdfService {
     private void dibujarMetadatos(
             PdfLienzo lienzo,
             UnidadPdf unidad,
-            Unidad40k datosCatalogo
+            DatosUnidadPdf datosCatalogo
     ) throws IOException {
         lienzo.seccion("Reglas y categorias");
         List<List<String>> metadatos = new ArrayList<>();
@@ -243,7 +281,7 @@ public class ListaPdfService {
         );
     }
 
-    private List<UnidadPdf> leerUnidades(ListaExportacionView lista, Catalogo40kData catalogo) throws IOException {
+    private List<UnidadPdf> leerUnidades(ListaExportacionView lista, Function<String, DatosUnidadPdf> buscarUnidad) throws IOException {
         JsonNode raiz = objectMapper.readTree(lista.datosListaJson());
         List<UnidadPdf> unidades = new ArrayList<>();
         for (JsonNode unidadJson : raiz.path("unidades")) {
@@ -264,7 +302,7 @@ public class ListaPdfService {
                     unidadJson.path("notas").asText(""),
                     composicion,
                     Set.copyOf(equipamiento),
-                    catalogo.buscarUnidad(lista.faccion(), lista.ejercito(), nombre)
+                    buscarUnidad.apply(nombre)
             ));
         }
         return List.copyOf(unidades);
@@ -462,7 +500,19 @@ public class ListaPdfService {
             String notas,
             List<FilaComposicion> composicion,
             Set<String> equipamiento,
-            Unidad40k datosCatalogo
+            DatosUnidadPdf datosCatalogo
+    ) {
+    }
+
+    private record DatosUnidadPdf(
+            List<Estadistica40k> estadisticas,
+            List<PerfilUnidad40k> perfilesDetalle,
+            List<PerfilArma40k> armasDetalle,
+            List<Habilidad40k> habilidadesDetalle,
+            String palabrasClaveFaccion,
+            String palabrasClave,
+            String armasTexto,
+            boolean esAos
     ) {
     }
 
@@ -478,9 +528,9 @@ public class ListaPdfService {
         private static final float ANCHO = PAGINA.getWidth() - (MARGEN * 2);
         private static final float TAMANO_TEXTO = 8.5f;
         private static final float INTERLINEADO = 10.5f;
-        private static final Color COLOR_CABECERA = new Color(112, 130, 145);
-        private static final Color COLOR_SECCION = new Color(222, 222, 222);
-        private static final Color COLOR_LINEA = new Color(151, 164, 175);
+        private static final Color COLOR_CABECERA = Color.WHITE;
+        private static final Color COLOR_SECCION = Color.WHITE;
+        private static final Color COLOR_LINEA = Color.BLACK;
 
         private final PDDocument documento;
         private final PDFont normal = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
@@ -515,20 +565,31 @@ public class ListaPdfService {
         }
 
         private void cabeceraUnidad(boolean continuacion) throws IOException {
-            float alto = 18;
+            String titulo = unidadActual.toUpperCase(Locale.ROOT) + (continuacion ? " - CONTINUACION" : "");
+            List<String> lineas = envolver(titulo, negrita, 9, ANCHO - 160);
+            float alto = Math.max(18, lineas.size() * 11 + 7);
             contenido.setNonStrokingColor(COLOR_CABECERA);
             contenido.addRect(MARGEN, y - alto, ANCHO, alto);
             contenido.fill();
-            textoEn(MARGEN + 10, y - 13, puntosUnidadActual + " PTS", 9, negrita, Color.WHITE);
-            String titulo = unidadActual.toUpperCase(Locale.ROOT) + (continuacion ? " - CONTINUACION" : "");
-            textoCentradoEn(titulo, y - 13, 9, negrita, Color.WHITE);
+            contenido.setStrokingColor(COLOR_LINEA);
+            contenido.addRect(MARGEN, y - alto, ANCHO, alto);
+            contenido.stroke();
+            textoEn(MARGEN + 10, y - 13, puntosUnidadActual + " PTS", 9, negrita, Color.BLACK);
+            float lineaY = y - 13;
+            for (String linea : lineas) {
+                textoCentradoEn(linea, lineaY, 9, negrita, Color.BLACK);
+                lineaY -= 11;
+            }
             y -= alto;
         }
 
         private void textoCentrado(String texto, float tamano, boolean usarNegrita) throws IOException {
             PDFont fuente = usarNegrita ? negrita : normal;
-            textoCentradoEn(texto, y - tamano, tamano, fuente);
-            y -= tamano + 4;
+            for (String linea : envolver(texto, fuente, tamano, ANCHO)) {
+                asegurarEspacio(tamano + 4);
+                textoCentradoEn(linea, y - tamano, tamano, fuente);
+                y -= tamano + 4;
+            }
         }
 
         private void texto(String texto, float tamano, boolean usarNegrita) throws IOException {
@@ -554,7 +615,7 @@ public class ListaPdfService {
             contenido.setStrokingColor(COLOR_LINEA);
             contenido.addRect(MARGEN, y - alto, ANCHO, alto);
             contenido.stroke();
-            contenido.setNonStrokingColor(Color.DARK_GRAY);
+            contenido.setNonStrokingColor(Color.BLACK);
             textoEn(MARGEN + 5, y - 11.5f, titulo, 9, negrita);
             y -= alto;
         }
@@ -565,14 +626,31 @@ public class ListaPdfService {
                 List<List<String>> filas
         ) throws IOException {
             float[] anchos = calcularAnchos(proporciones);
-            dibujarFila(cabeceras, anchos, true);
+            List<List<String>> lineasCabecera = prepararCeldas(cabeceras, anchos, negrita);
+            asegurarEspacio(altoFila(lineasCabecera) + 18);
+            dibujarFila(lineasCabecera, anchos, true);
             for (List<String> fila : filas) {
-                float alto = calcularAltoFila(fila, anchos);
-                if (y - alto < MARGEN) {
+                List<List<String>> lineas = prepararCeldas(fila, anchos, normal);
+                if (y - altoFila(lineas) < MARGEN) {
                     continuarUnidad();
-                    dibujarFila(cabeceras, anchos, true);
+                    dibujarFila(lineasCabecera, anchos, true);
                 }
-                dibujarFila(fila, anchos, false);
+                int totalLineas = lineas.stream().mapToInt(List::size).max().orElse(1);
+                int desde = 0;
+                while (desde < totalLineas) {
+                    int disponibles = Math.max(1, (int) ((y - MARGEN - 7) / INTERLINEADO));
+                    int hasta = Math.min(totalLineas, desde + disponibles);
+                    List<List<String>> fragmento = new ArrayList<>();
+                    for (List<String> celda : lineas) {
+                        fragmento.add(celda.subList(Math.min(desde, celda.size()), Math.min(hasta, celda.size())));
+                    }
+                    dibujarFila(fragmento, anchos, false);
+                    desde = hasta;
+                    if (desde < totalLineas) {
+                        continuarUnidad();
+                        dibujarFila(lineasCabecera, anchos, true);
+                    }
+                }
             }
             y -= 5;
         }
@@ -585,9 +663,8 @@ public class ListaPdfService {
             );
         }
 
-        private void dibujarFila(List<String> celdas, float[] anchos, boolean cabecera) throws IOException {
-            float alto = calcularAltoFila(celdas, anchos);
-            asegurarEspacio(alto);
+        private void dibujarFila(List<List<String>> celdas, float[] anchos, boolean cabecera) throws IOException {
+            float alto = altoFila(celdas);
             float x = MARGEN;
 
             if (cabecera) {
@@ -607,12 +684,7 @@ public class ListaPdfService {
                     contenido.stroke();
                 }
                 PDFont fuente = cabecera ? negrita : normal;
-                List<String> lineas = envolver(
-                        indice < celdas.size() ? celdas.get(indice) : "",
-                        fuente,
-                        TAMANO_TEXTO,
-                        anchos[indice] - 8
-                );
+                List<String> lineas = celdas.get(indice);
                 float lineaY = y - 4 - TAMANO_TEXTO;
                 for (String linea : lineas) {
                     textoEn(x + 4, lineaY, linea, TAMANO_TEXTO, fuente);
@@ -623,12 +695,16 @@ public class ListaPdfService {
             y -= alto;
         }
 
-        private float calcularAltoFila(List<String> celdas, float[] anchos) throws IOException {
-            int maximoLineas = 1;
+        private List<List<String>> prepararCeldas(List<String> celdas, float[] anchos, PDFont fuente) throws IOException {
+            List<List<String>> resultado = new ArrayList<>();
             for (int indice = 0; indice < celdas.size(); indice++) {
-                int lineas = envolver(celdas.get(indice), normal, TAMANO_TEXTO, anchos[indice] - 8).size();
-                maximoLineas = Math.max(maximoLineas, lineas);
+                resultado.add(envolver(celdas.get(indice), fuente, TAMANO_TEXTO, anchos[indice] - 8));
             }
+            return resultado;
+        }
+
+        private float altoFila(List<List<String>> celdas) {
+            int maximoLineas = celdas.stream().mapToInt(List::size).max().orElse(1);
             return Math.max(17, (maximoLineas * INTERLINEADO) + 7);
         }
 
@@ -669,12 +745,16 @@ public class ListaPdfService {
                     if (anchoTexto(candidata, fuente, tamano) <= anchoMaximo) {
                         linea.setLength(0);
                         linea.append(candidata);
-                    } else if (!linea.isEmpty()) {
-                        lineas.add(linea.toString());
-                        linea.setLength(0);
-                        linea.append(palabra);
                     } else {
-                        lineas.addAll(partirPalabra(palabra, fuente, tamano, anchoMaximo));
+                        if (!linea.isEmpty()) {
+                            lineas.add(linea.toString());
+                            linea.setLength(0);
+                        }
+                        List<String> partes = partirPalabra(palabra, fuente, tamano, anchoMaximo);
+                        if (!partes.isEmpty()) {
+                            lineas.addAll(partes.subList(0, partes.size() - 1));
+                            linea.append(partes.get(partes.size() - 1));
+                        }
                     }
                 }
                 if (!linea.isEmpty()) {
@@ -706,7 +786,7 @@ public class ListaPdfService {
         }
 
         private void textoEn(float x, float yTexto, String texto, float tamano, PDFont fuente) throws IOException {
-            textoEn(x, yTexto, texto, tamano, fuente, Color.DARK_GRAY);
+            textoEn(x, yTexto, texto, tamano, fuente, Color.BLACK);
         }
 
         private void textoEn(
@@ -726,7 +806,7 @@ public class ListaPdfService {
         }
 
         private void textoCentradoEn(String texto, float yTexto, float tamano, PDFont fuente) throws IOException {
-            textoCentradoEn(texto, yTexto, tamano, fuente, Color.DARK_GRAY);
+            textoCentradoEn(texto, yTexto, tamano, fuente, Color.BLACK);
         }
 
         private void textoCentradoEn(

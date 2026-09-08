@@ -12,13 +12,15 @@ const script = readFileSync(path.join(root, 'src/main/resources/static/js/creado
 function abrirCreador(t, formato = 'WH40K_11') {
   const dom = new JSDOM(`<!doctype html><html><body>
     <main id="creadorListaApp" data-formato-juego="${formato}" data-nombre-lista="Prueba"
-      data-faccion="Imperium" data-ejercito="Prueba" data-limite-puntos="2000">
+      data-faccion="Imperium" data-ejercito="Prueba" data-limite-puntos="2000"
+      data-url-asistente="/creador-listas-40k/asistente/analizar">
       <div class="catalog-category" id="categoriaEspecial">
         <button class="boton-catalogo-especial" data-tipo-especial="destacamentos">Destacamentos</button>
         <button class="boton-catalogo-especial" data-tipo-especial="disposicion">Disposición</button>
       </div>
       <div class="catalog-category">
         <button class="boton-catalogo-unidad" data-nombre="Capitán" data-roles="Character"
+          data-perfiles-armas-json='[{"nombre":"Lascannon","tipo":"Ranged Weapon","ataques":"1","fuerza":"12","penetracion":"-3","dano":"D6+1"}]'
           data-character="true" data-puntos="100" data-puntos-base="100" data-categoria="personajes">Capitán</button>
       </div>
       <select id="datosDestacamentos" hidden multiple>
@@ -39,6 +41,11 @@ function abrirCreador(t, formato = 'WH40K_11') {
       <div id="panelProgreso"><div id="barraPuntos"></div></div><div id="resumenValidacion"></div>
       <ul id="erroresValidacion"></ul><span id="estadoValidacion"></span><span id="estadoGuardado"></span>
       <button id="botonGuardarLista">Guardar</button>
+      <button id="abrirAsistente" aria-expanded="false">Asistente</button>
+      <aside id="panelAsistente" hidden><button id="cerrarAsistente">Cerrar</button>
+        <div id="mensajesAsistente"></div><form id="formAsistente">
+          <input id="preguntaAsistente"><button id="enviarAsistente">Enviar</button>
+          <p id="estadoAsistente"></p></form></aside>
     </main></body></html>`, { runScripts: 'outside-only', url: 'http://localhost/creador-listas-40k',
       virtualConsole: new VirtualConsole() });
   t.after(() => dom.window.close());
@@ -124,4 +131,33 @@ test('el creador AoS compartido sigue validando sin exigir destacamentos', t => 
   ui.document.querySelector('#bloque-personajes .boton-seleccionar-unidad').click();
   ui.document.getElementById('unidadWarlord').click();
   assert.equal(ui.document.getElementById('erroresValidacion').children.length, 0);
+});
+
+test('el asistente envia la lista actual y muestra recomendaciones sin interpretar HTML', async t => {
+  const ui = abrirCreador(t);
+  ui.document.querySelector('.boton-catalogo-unidad').click();
+  const pregunta = ui.document.getElementById('preguntaAsistente');
+  ui.document.getElementById('abrirAsistente').click();
+  assert.equal(ui.document.getElementById('panelAsistente').hidden, false);
+  pregunta.value = '¿Qué mejorarías?';
+  let listaEnviada;
+  ui.dom.window.fetch = async (url, request) => {
+    const parametros = new URLSearchParams(request.body);
+    listaEnviada = JSON.parse(parametros.get('datosListaJson'));
+    assert.equal(parametros.get('pregunta'), '¿Qué mejorarías?');
+    return { ok: true, json: async () => ({
+      resumen: '<b>Análisis seguro</b>',
+      fortalezas: ['Un Warlord'],
+      recomendaciones: ['Añade Battleline']
+    }) };
+  };
+  ui.document.getElementById('formAsistente').dispatchEvent(
+    new ui.dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(listaEnviada.unidades.filter(u => !u.tipoEspecial).length, 1);
+  assert.equal(listaEnviada.unidades.find(u => !u.tipoEspecial).perfilesArmas[0].nombre, 'Lascannon');
+  const mensajes = ui.document.getElementById('mensajesAsistente');
+  assert.match(mensajes.textContent, /Análisis seguro/);
+  assert.match(mensajes.textContent, /Añade Battleline/);
+  assert.equal(mensajes.querySelector('b'), null);
 });

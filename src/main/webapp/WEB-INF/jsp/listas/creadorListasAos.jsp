@@ -221,7 +221,7 @@
                 <section class="builder-column"><h2 class="column-title">Catálogo</h2><div class="catalog-scroll">
                   <c:forEach var="categoria" items="${creadorListaAos.categorias}"><div class="catalog-category" data-catalog-category="<c:out value='${categoria.id}' />"><h4><c:out value="${categoria.titulo}" /></h4><div>
                     <c:forEach var="unidad" items="${categoria.unidades}">
-                      <button type="button" class="boton-catalogo-unidad catalog-button" data-nombre="<c:out value='${unidad.nombre}'/>" data-roles="<c:out value='${unidad.roles}'/>" data-puntos="<c:out value='${unidad.puntos}'/>" data-puntos-base="<c:out value='${unidad.puntosBase}'/>" data-categoria="<c:out value='${unidad.categoria}'/>" data-armas="<c:out value='${unidad.armas}'/>" data-palabras-clave-faccion="<c:out value='${unidad.palabrasClaveFaccion}'/>" data-palabras-clave="<c:out value='${unidad.palabrasClave}'/>" data-configuracion-json="<c:out value='${unidad.configuracionJson}'/>" data-es-legend="${unidad.legend}" data-es-fortificacion="${unidad.fortificacion}" data-es-aliada="${unidad.aliada}" data-battleline="${unidad.battleline}" data-epic-hero="${unidad.epicHero}" data-character="${unidad.character}" data-leader="${unidad.leader}" data-support="${unidad.support}" data-compatibles-json="<c:out value='${unidad.compatiblesJson}'/>"><span><span class="unit-name"><c:out value="${unidad.nombre}" /></span><span class="unit-role"><c:out value="${unidad.roles}" /><c:if test="${not empty unidad.palabrasClave}"> · <c:out value="${unidad.palabrasClave}" /></c:if></span></span><span class="catalog-button-points"><c:out value="${unidad.puntosBase}" /> pts</span></button>
+                      <button type="button" class="boton-catalogo-unidad catalog-button" data-nombre="<c:out value='${unidad.nombre}'/>" data-roles="<c:out value='${unidad.roles}'/>" data-puntos="<c:out value='${unidad.puntos}'/>" data-puntos-base="<c:out value='${unidad.puntosBase}'/>" data-categoria="<c:out value='${unidad.categoria}'/>" data-armas="<c:out value='${unidad.armas}'/>" data-perfiles-armas-json="<c:out value='${unidad.perfilesArmasJson}'/>" data-palabras-clave-faccion="<c:out value='${unidad.palabrasClaveFaccion}'/>" data-palabras-clave="<c:out value='${unidad.palabrasClave}'/>" data-configuracion-json="<c:out value='${unidad.configuracionJson}'/>" data-es-legend="${unidad.legend}" data-es-fortificacion="${unidad.fortificacion}" data-es-aliada="${unidad.aliada}" data-battleline="${unidad.battleline}" data-epic-hero="${unidad.epicHero}" data-character="${unidad.character}" data-leader="${unidad.leader}" data-support="${unidad.support}" data-compatibles-json="<c:out value='${unidad.compatiblesJson}'/>"><span><span class="unit-name"><c:out value="${unidad.nombre}" /></span><span class="unit-role"><c:out value="${unidad.roles}" /><c:if test="${not empty unidad.palabrasClave}"> · <c:out value="${unidad.palabrasClave}" /></c:if></span></span><span class="catalog-button-points"><c:out value="${unidad.puntosBase}" /> pts</span></button>
                     </c:forEach>
                   </div></div></c:forEach>
                 </div></section>
@@ -236,6 +236,6 @@
       </div>
     </div>
 
-    <script src="/js/creador-listas-40k.js?v=7"></script>
+    <script src="/js/creador-listas-40k.js?v=8"></script>
   </body>
 </html>

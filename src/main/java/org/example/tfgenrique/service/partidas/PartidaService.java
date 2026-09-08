@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.example.tfgenrique.dao.PartidaRepository;
 import org.example.tfgenrique.dao.RondaPartidaRepository;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PartidaService {
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String FORMATO_40K = "WH40K_11";
     private static final String ESTILO_EQUILIBRADO = "EQUILIBRADO";
     private static final String ESTILO_ASIMETRICO = "ASIMETRICO";
@@ -210,8 +213,9 @@ public class PartidaService {
         int ronda = ajustarRonda(numeroRonda);
         RondaPartida rondaPartida = rondaPartidaRepository.findByPartidaAndNumeroRonda(partida, ronda).orElse(null);
 
-        JugadorRondaView jugador1 = crearJugadorRonda(partida, rondaPartida, JUGADOR_USUARIO, "jugador1");
-        JugadorRondaView jugador2 = crearJugadorRonda(partida, rondaPartida, JUGADOR_RIVAL, "jugador2");
+        RondaPartida anterior = ronda > 1 ? rondaPartidaRepository.findByPartidaAndNumeroRonda(partida, ronda - 1).orElse(null) : null;
+        JugadorRondaView jugador1 = crearJugadorRonda(partida, rondaPartida, anterior, JUGADOR_USUARIO, "jugador1");
+        JugadorRondaView jugador2 = crearJugadorRonda(partida, rondaPartida, anterior, JUGADOR_RIVAL, "jugador2");
         JugadorRondaView izquierda = JUGADOR_RIVAL.equals(partida.getJugadorPrimero()) ? jugador2 : jugador1;
         JugadorRondaView derecha = JUGADOR_RIVAL.equals(partida.getJugadorPrimero()) ? jugador1 : jugador2;
 
@@ -242,10 +246,13 @@ public class PartidaService {
         rondaPartida.setPartida(partida);
         rondaPartida.setNumeroRonda(ronda);
         rondaPartida.setJugadorConPrioridad(JUGADOR_USUARIO.equals(partida.getJugadorPrimero()) ? partida.getJugador1Usuario() : partida.getJugador2Usuario());
-        rondaPartida.setCpJugador1Inicio(entero(params.get("jugador1CpInicio")));
-        rondaPartida.setCpJugador1Fin(entero(params.get("jugador1CpFin")));
-        rondaPartida.setCpJugador2Inicio(entero(params.get("jugador2CpInicio")));
-        rondaPartida.setCpJugador2Fin(entero(params.get("jugador2CpFin")));
+        RondaPartida anterior = ronda > 1 ? rondaPartidaRepository.findByPartidaAndNumeroRonda(partida, ronda - 1).orElse(null) : null;
+        var cp1 = prepararCp(params, "jugador1", rondaPartida.getCpJugador1Inicio(), anterior == null ? 0 : valor(anterior.getCpJugador1Fin()));
+        var cp2 = prepararCp(params, "jugador2", rondaPartida.getCpJugador2Inicio(), anterior == null ? 0 : valor(anterior.getCpJugador2Fin()));
+        rondaPartida.setCpJugador1Inicio(cp1.inicio());
+        rondaPartida.setCpJugador1Fin(cp1.fin());
+        rondaPartida.setCpJugador2Inicio(cp2.inicio());
+        rondaPartida.setCpJugador2Fin(cp2.fin());
         rondaPartida.setPrimariaJugador1(entero(params.get("jugador1Primaria")));
         rondaPartida.setPrimariaJugador2(entero(params.get("jugador2Primaria")));
         rondaPartida.setSecundariaJugador1(entero(params.get("jugador1Secundaria")));
@@ -254,8 +261,8 @@ public class PartidaService {
         rondaPartida.setBonusJugador2(0);
         rondaPartida.setTotalAcumuladoJugador1(0);
         rondaPartida.setTotalAcumuladoJugador2(0);
-        rondaPartida.setDetalleJugador1(textoOpcional(params.get("jugador1Detalle")));
-        rondaPartida.setDetalleJugador2(textoOpcional(params.get("jugador2Detalle")));
+        rondaPartida.setDetalleJugador1(guardarDetalleRonda(params.get("jugador1Detalle"), cp1));
+        rondaPartida.setDetalleJugador2(guardarDetalleRonda(params.get("jugador2Detalle"), cp2));
         rondaPartida.setNotas(textoOpcional(params.get("notas")));
         if (nuevo) {
             rondaPartida.setCreadoEn(ahora);
@@ -316,15 +323,15 @@ public class PartidaService {
         return total1 > total2 ? partida.getJugador1NombreSnapshot() : partida.getJugador2NombreSnapshot();
     }
 
-    private JugadorRondaView crearJugadorRonda(Partida partida, RondaPartida ronda, String tipoJugador, String prefijo) {
+    private JugadorRondaView crearJugadorRonda(Partida partida, RondaPartida ronda, RondaPartida anterior, String tipoJugador, String prefijo) {
         boolean usuario = JUGADOR_USUARIO.equals(tipoJugador);
         String nombre = usuario ? partida.getJugador1NombreSnapshot() : partida.getJugador2NombreSnapshot();
         String faccion = usuario ? partida.getJugador1FaccionSnapshot() : partida.getJugador2FaccionSnapshot();
         String lista = usuario ? partida.getJugador1NombreListaSnapshot() : partida.getJugador2NombreListaSnapshot();
         boolean primero = tipoJugador.equals(partida.getJugadorPrimero());
         boolean defensor = tipoJugador.equals(partida.getJugadorDefensor());
-        int cpInicio = 0;
-        int cpFin = 0;
+        int cpInicio = anterior == null ? 0 : valor(usuario ? anterior.getCpJugador1Fin() : anterior.getCpJugador2Fin());
+        int cpFin = cpInicio;
         int primaria = 0;
         int secundaria = 0;
         String detalle = "";
@@ -345,6 +352,11 @@ public class PartidaService {
             }
         }
 
+        JsonNode datos = leerDetalleRonda(detalle);
+        int ganados = datos.path("cp").path("ganados").asInt(Math.max(0, cpFin - cpInicio));
+        int gastados = datos.path("cp").path("gastados").asInt(Math.max(0, cpInicio - cpFin));
+        detalle = (datos.isArray() ? datos : datos.path("misiones")).toString();
+
         return new JugadorRondaView(
                 prefijo,
                 tipoJugador,
@@ -355,10 +367,56 @@ public class PartidaService {
                 defensor,
                 cpInicio,
                 cpFin,
+                ganados,
+                gastados,
                 primaria,
                 secundaria,
                 detalle
         );
+    }
+
+    private record CpRonda(int inicio, int ganados, int gastados, int fin) { }
+
+    private CpRonda prepararCp(Map<String, String> params, String prefijo, Integer inicioGuardado, int saldoAnterior) {
+        // Las peticiones antiguas siguen usando los saldos de inicio y fin.
+        if (!params.containsKey(prefijo + "CpGanados")) {
+            int inicio = entero(params.get(prefijo + "CpInicio"));
+            int fin = entero(params.get(prefijo + "CpFin"));
+            return new CpRonda(inicio, Math.max(0, fin - inicio), Math.max(0, inicio - fin), fin);
+        }
+        int inicio = inicioGuardado == null ? saldoAnterior : inicioGuardado;
+        int ganados = leerCantidadCp(params.get(prefijo + "CpGanados"));
+        int gastados = leerCantidadCp(params.get(prefijo + "CpGastados"));
+        long fin = (long) inicio + ganados - gastados;
+        if (fin < 0 || fin > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Los CP gastados no pueden superar los disponibles y el saldo debe ser valido.");
+        }
+        return new CpRonda(inicio, ganados, gastados, (int) fin);
+    }
+
+    private int leerCantidadCp(String texto) {
+        try {
+            int cantidad = Integer.parseInt(texto == null || texto.isBlank() ? "0" : texto);
+            if (cantidad >= 0) return cantidad;
+        } catch (NumberFormatException ignored) { }
+        throw new IllegalArgumentException("Los CP deben ser numeros enteros mayores o iguales a cero.");
+    }
+
+    private JsonNode leerDetalleRonda(String detalle) {
+        if (detalle == null || detalle.isBlank()) return objectMapper.createArrayNode();
+        try {
+            JsonNode datos = objectMapper.readTree(detalle);
+            if (datos != null && (datos.isArray() || datos.path("misiones").isArray())) return datos;
+        } catch (java.io.IOException ignored) { }
+        throw new IllegalArgumentException("El detalle de las misiones de la ronda no es valido.");
+    }
+
+    private String guardarDetalleRonda(String detalle, CpRonda cp) {
+        JsonNode datos = leerDetalleRonda(detalle);
+        var resultado = objectMapper.createObjectNode();
+        resultado.set("misiones", datos.isArray() ? datos : datos.path("misiones"));
+        resultado.putObject("cp").put("ganados", cp.ganados()).put("gastados", cp.gastados());
+        return resultado.toString();
     }
 
     private Partida buscarPartidaUsuario(Long usuarioId, Long partidaId) {
@@ -754,6 +812,8 @@ public class PartidaService {
             boolean defensor,
             int cpInicio,
             int cpFin,
+            int cpGanados,
+            int cpGastados,
             int primaria,
             int secundaria,
             String detalle

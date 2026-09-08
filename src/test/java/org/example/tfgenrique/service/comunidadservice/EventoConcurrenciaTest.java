@@ -7,6 +7,8 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.*;
@@ -73,6 +75,123 @@ class EventoConcurrenciaTest {
         long aceptadas = simultaneas(12, i -> () -> inscribir(servicio(i), usuarios.get(i), evento));
         assertEquals(3, aceptadas);
         assertEquals(3, inscripciones.countByEvento(evento));
+    }
+
+    @Test
+    @DisplayName("Bloqueo de escritura, control de plazas, cancelacion y baja de inscripcion")
+    void demuestraBloqueoCancelacionYBaja() throws Exception {
+        // Servicios, repositorios y transacciones reales sobre H2; no se simulan con mocks.
+        Evento evento = evento(3);
+        List<Usuario> usuarios = new ArrayList<>();
+        for (int i = 0; i < 12; i++) usuarios.add(miembro("captura" + i));
+        RegistroSql registro = contexto.getBean(RegistroSql.class);
+
+        long aceptadas = simultaneas(12, i -> () -> {
+            registro.iniciar();
+            boolean aceptada;
+            List<String> sentencias;
+            try {
+                aceptada = inscribir(servicio(i), usuarios.get(i), evento);
+            } finally {
+                sentencias = registro.terminar();
+            }
+            int bloqueo = indiceSql(sentencias, "from eventos", "for update");
+            int consulta = indiceSql(sentencias, "from inscripciones_evento");
+            assertTrue(bloqueo >= 0, "Debe existir un SELECT FOR UPDATE sobre el evento");
+            assertTrue(consulta > bloqueo, "El bloqueo debe adquirirse antes de consultar las inscripciones");
+            return aceptada;
+        });
+        assertEquals(3, aceptadas, "Solo deben aceptarse las tres plazas disponibles");
+        assertEquals(3, inscripciones.countByEvento(evento));
+
+        Usuario inscrito = usuarios.stream()
+                .filter(u -> inscripciones.existsByEventoAndUsuario(evento, u)).findFirst().orElseThrow();
+        Long inscripcionId = inscripciones.findByEventoAndUsuario(evento, inscrito).orElseThrow().getId();
+        registro.iniciar();
+        List<String> sqlBaja;
+        try {
+            segundaInstancia.desinscribirseDeEvento(inscrito.getId(), evento.getId());
+        } finally {
+            sqlBaja = registro.terminar();
+        }
+        assertTrue(indiceSql(sqlBaja, "delete from inscripciones_evento") >= 0,
+                "La baja debe ejecutar DELETE sobre la inscripcion");
+        assertFalse(inscripciones.existsById(inscripcionId), "El registro de inscripcion debe desaparecer");
+        assertEquals(2, inscripciones.countByEvento(evento));
+        assertEquals("ABIERTO", eventos.findById(evento.getId()).orElseThrow().getEstado());
+
+        Usuario reserva = miembro("reserva");
+        primeraInstancia.unirseAEvento(reserva.getId(), evento.getId());
+        assertEquals(3, inscripciones.countByEvento(evento), "La baja debe dejar una plaza reutilizable");
+        List<Long> idsAntes = inscripciones.findByEventoOrderByInscritoEnAsc(evento).stream()
+                .map(InscripcionEvento::getId).sorted().toList();
+
+        registro.iniciar();
+        List<String> sqlCancelacion;
+        try {
+            primeraInstancia.eliminarEvento(organizador.getId(), comunidad.getId(), evento.getId());
+        } finally {
+            sqlCancelacion = registro.terminar();
+        }
+        assertTrue(indiceSql(sqlCancelacion, "update eventos") >= 0,
+                "La cancelacion debe actualizar el evento");
+        assertEquals(-1, indiceSql(sqlCancelacion, "delete from eventos"));
+        assertEquals("CANCELADO", eventos.findById(evento.getId()).orElseThrow().getEstado(),
+                "El evento debe seguir existiendo con estado CANCELADO");
+        assertEquals(idsAntes, inscripciones.findByEventoOrderByInscritoEnAsc(evento).stream()
+                .map(InscripcionEvento::getId).sorted().toList(), "Cancelar no debe borrar las inscripciones");
+        IllegalArgumentException rechazo = assertThrows(IllegalArgumentException.class,
+                () -> segundaInstancia.unirseAEvento(inscrito.getId(), evento.getId()));
+        assertTrue(rechazo.getMessage().contains("no est"), rechazo.getMessage());
+        assertEquals(3, inscripciones.countByEvento(evento));
+
+        // Este resumen solo se imprime cuando todas las comprobaciones han pasado.
+        System.out.println("""
+
+                ===============================================================
+                PRUEBA DE EVENTOS: BLOQUEO, CANCELACION E INSCRIPCIONES
+                Base de datos: H2 en memoria | Servicios y repositorios reales
+                ===============================================================
+                [OK] SELECT FOR UPDATE antes de consultar las inscripciones.
+                [OK] 12 solicitudes concurrentes: 3 aceptadas y 9 rechazadas.
+                [OK] Aforo respetado: 3 inscripciones para 3 plazas.
+                [OK] Baja: DELETE de la inscripcion; quedan 2 inscritos.
+                [OK] Plaza liberada: otro usuario puede inscribirse.
+                [OK] Cancelacion: UPDATE del estado a CANCELADO.
+                [OK] Se conservan el evento y sus 3 inscripciones.
+                [OK] El evento cancelado rechaza nuevas inscripciones.
+                RESULTADO: TODAS LAS COMPROBACIONES SUPERADAS
+                ===============================================================
+                """);
+    }
+
+    private int indiceSql(List<String> sentencias, String... fragmentos) {
+        for (int i = 0; i < sentencias.size(); i++) {
+            String sql = sentencias.get(i);
+            if (Arrays.stream(fragmentos).allMatch(sql::contains)) return i;
+        }
+        return -1;
+    }
+
+    static class RegistroSql implements StatementInspector {
+        // Cada solicitud concurrente registra unicamente sus propias sentencias.
+        private final ThreadLocal<List<String>> consultas = new ThreadLocal<>();
+
+        void iniciar() { consultas.set(new ArrayList<>()); }
+
+        List<String> terminar() {
+            List<String> resultado = List.copyOf(consultas.get());
+            consultas.remove();
+            return resultado;
+        }
+
+        @Override
+        public String inspect(String sql) {
+            if (consultas.get() != null) {
+                consultas.get().add(sql.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim());
+            }
+            return sql;
+        }
     }
 
     @Test
@@ -256,11 +375,13 @@ class EventoConcurrenciaTest {
             ds.setURL("jdbc:h2:mem:eventos-" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000");
             return ds;
         }
-        @Bean LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds) {
+        @Bean RegistroSql registroSql() { return new RegistroSql(); }
+        @Bean LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource ds, RegistroSql registro) {
             var fabrica = new LocalContainerEntityManagerFactoryBean();
             fabrica.setDataSource(ds); fabrica.setPackagesToScan("org.example.tfgenrique.entity");
             fabrica.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-            fabrica.setJpaPropertyMap(Map.of("hibernate.hbm2ddl.auto", "create-drop"));
+            fabrica.setJpaPropertyMap(Map.of("hibernate.hbm2ddl.auto", "create-drop",
+                    "hibernate.session_factory.statement_inspector", registro));
             return fabrica;
         }
         @Bean JpaTransactionManager transactionManager(EntityManagerFactory fabrica) { return new JpaTransactionManager(fabrica); }

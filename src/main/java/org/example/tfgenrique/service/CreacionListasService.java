@@ -171,6 +171,7 @@ public class CreacionListasService {
                         obtenerPuntosMinimos(unidad.puntos()),
                         categoria,
                         valorSeguroVista(unidad.armas()),
+                        serializarPerfilesArmas(unidad.armasDetalle()),
                         valorSeguroVista(unidad.habilidades()),
                         valorSeguroVista(unidad.palabrasClaveFaccion()),
                         valorSeguroVista(unidad.palabrasClave()),
@@ -678,6 +679,43 @@ public class CreacionListasService {
         return json.toString();
     }
 
+    private String serializarPerfilesArmas(List<Catalogo40kService.PerfilArma40k> perfiles) {
+        StringBuilder json = new StringBuilder("[");
+        List<Catalogo40kService.PerfilArma40k> perfilesSeguros = perfiles == null ? List.of() : perfiles;
+        for (int indice = 0; indice < perfilesSeguros.size(); indice++) {
+            Catalogo40kService.PerfilArma40k perfil = perfilesSeguros.get(indice);
+            if (indice > 0) {
+                json.append(',');
+            }
+            json.append('{')
+                    .append("\"nombre\":\"").append(escaparJson(perfil.nombre())).append("\",")
+                    .append("\"tipo\":\"").append(escaparJson(perfil.tipo())).append("\",")
+                    .append("\"rango\":\"").append(escaparJson(valorPerfilArma(perfil, "Range", "Rango", "Alcance"))).append("\",")
+                    .append("\"ataques\":\"").append(escaparJson(valorPerfilArma(perfil, "A", "Attacks", "Ataques"))).append("\",")
+                    .append("\"impacta\":\"").append(escaparJson(valorPerfilArma(perfil, "BS", "Ballistic Skill", "HP", "Hit", "WS"))).append("\",")
+                    .append("\"fuerza\":\"").append(escaparJson(valorPerfilArma(perfil, "S", "Strength", "Fuerza"))).append("\",")
+                    .append("\"penetracion\":\"").append(escaparJson(valorPerfilArma(perfil, "AP", "Armour Penetration", "Armor Penetration", "FP"))).append("\",")
+                    .append("\"dano\":\"").append(escaparJson(valorPerfilArma(perfil, "D", "Damage", "Daño"))).append("\"")
+                    .append('}');
+        }
+        return json.append(']').toString();
+    }
+
+    private String valorPerfilArma(Catalogo40kService.PerfilArma40k perfil, String... nombres) {
+        if (perfil.estadisticas() == null) {
+            return "";
+        }
+        for (String nombre : nombres) {
+            for (Catalogo40kService.Estadistica40k estadistica : perfil.estadisticas()) {
+                if (nombre.equalsIgnoreCase(valorSeguroONulo(estadistica.nombre()))
+                        && !valorSeguroONulo(estadistica.valor()).isBlank()) {
+                    return estadistica.valor().trim();
+                }
+            }
+        }
+        return "";
+    }
+
     private String escaparJson(String texto) {
         String valor = texto == null ? "" : texto;
         StringBuilder escapado = new StringBuilder(valor.length() + 8);
@@ -737,6 +775,7 @@ public class CreacionListasService {
             Integer puntosBase,
             String categoria,
             String armas,
+            String perfilesArmasJson,
             String habilidades,
             String palabrasClaveFaccion,
             String palabrasClave,
@@ -775,6 +814,7 @@ public class CreacionListasService {
                         obtenerPuntosMinimos(unidad.puntos()),
                         categoria,
                         valorSeguroVista(unidad.armas()),
+                        "[]",
                         valorSeguroVista(unidad.habilidades()),
                         valorSeguroVista(unidad.palabrasClaveFaccion()),
                         valorSeguroVista(unidad.palabrasClave()),

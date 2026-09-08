@@ -78,7 +78,7 @@
                   </select>
                 </label>
                 <button class="button-primary" type="submit">Filtrar</button>
-                <button type="button" class="button-secondary" id="abrirPopupCreador">Crear lista</button>
+                <a class="button-secondary" href="/menu-principal#popupCreador">Crear lista</a>
               </form>
 
               <span class="summary-chip"><c:out value="${misListas.listas.size()}" /> listas</span>
@@ -122,8 +122,9 @@
                         <td><c:out value="${lista.numeroVersion}" /></td>
                         <td>
                           <c:choose>
-                            <c:when test="${lista.codigoFormatoJuego eq 'WH40K_11'}">
-                              <a class="button-secondary export-button" href="${exportarListaUrl}">Exportar</a>
+                            <c:when test="${lista.codigoFormatoJuego eq 'WH40K_11' or lista.codigoFormatoJuego eq 'AOS_4'}">
+                              <a class="button-secondary export-button" href="${exportarListaUrl}" download
+                                 aria-label="Exportar en PDF: <c:out value='${lista.nombreLista}' />">Exportar PDF</a>
                             </c:when>
                             <c:otherwise>
                               <span class="summary-chip">No disponible</span>

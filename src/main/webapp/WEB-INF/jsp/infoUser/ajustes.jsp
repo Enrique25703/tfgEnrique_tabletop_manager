@@ -53,6 +53,27 @@
         gap: 18px;
       }
 
+      [hidden] {
+        display: none !important;
+      }
+
+      .profile-details {
+        display: grid;
+        gap: 20px;
+        margin: 0 0 24px;
+      }
+
+      .profile-details dt {
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .profile-details dd {
+        margin: 0;
+        font-size: 1.05rem;
+        overflow-wrap: anywhere;
+      }
+
       .form-grid {
         display: grid;
         gap: 16px;
@@ -216,7 +237,30 @@
               <div class="error-box"><c:out value="${mensajeError}" /></div>
             </c:if>
 
-            <form method="post" action="/ajustes/perfil">
+            <div id="perfilResumen" class="settings-layout">
+              <aside class="profile-card-panel">
+                <div class="avatar-shell">
+                  <img src="<c:out value='${perfil.fotoMostrada}' />" alt="Foto de perfil" />
+                </div>
+              </aside>
+
+              <section class="settings-form-card" aria-labelledby="perfilResumenTitulo">
+                <h3 id="perfilResumenTitulo" tabindex="-1">Datos del perfil</h3>
+                <dl class="profile-details">
+                  <div>
+                    <dt>Nombre de usuario</dt>
+                    <dd><c:out value="${perfil.nombreUsuario}" /></dd>
+                  </div>
+                  <div>
+                    <dt>Correo</dt>
+                    <dd><c:out value="${perfil.email}" /></dd>
+                  </div>
+                </dl>
+                <button class="button-primary" type="button" id="editarPerfil" aria-controls="perfilFormulario">Editar perfil</button>
+              </section>
+            </div>
+
+            <form id="perfilFormulario" method="post" action="/ajustes/perfil" data-error="${not empty mensajeError}" hidden>
               <div class="settings-layout">
                 <aside class="profile-card-panel">
                   <div class="avatar-shell">
@@ -229,7 +273,7 @@
 
                 <div class="settings-stack">
                   <section class="settings-form-card">
-                    <h3>Datos del perfil</h3>
+                    <h3>Editar perfil</h3>
                     <div class="form-grid">
                       <div class="field-row">
                         <label>
@@ -257,12 +301,17 @@
 
                   <section class="password-card">
                     <div class="password-trigger">
-                      <button class="button-secondary" type="button" id="abrirPasswordModal">Abrir formulario</button>
+                      <div>
+                        <h3 style="margin:0 0 8px;">Contraseña</h3>
+                        <p class="muted-copy">Cámbiala solo si lo deseas.</p>
+                      </div>
+                      <button class="button-secondary" type="button" id="abrirPasswordModal">Cambiar contraseña</button>
                     </div>
                   </section>
 
                   <div class="form-actions">
                     <button class="button-primary" type="submit">Guardar cambios</button>
+                    <button class="button-secondary" type="button" id="cancelarPerfil">Cancelar</button>
                   </div>
                 </div>
               </div>
@@ -271,26 +320,26 @@
                 <div class="modal-card password-modal-card">
                   <div class="modal-header">
                     <div>
-                      <h3 style="margin:0;">Cambiar contrasena</h3>
+                      <h3 style="margin:0;">Cambiar contraseña</h3>
                     </div>
                     <button class="button-secondary" type="button" id="cerrarPasswordModal">Cerrar</button>
                   </div>
 
                   <div class="form-grid">
                     <label>
-                      Contrasena actual
-                      <input type="password" name="contrasenaActual" id="contrasenaActualInput" />
+                      Contraseña actual
+                      <input type="password" name="contrasenaActual" id="contrasenaActualInput" autocomplete="current-password" />
                     </label>
 
                     <div class="field-row">
                       <label>
-                        Nueva contrasena
-                        <input type="password" name="nuevaContrasena" id="nuevaContrasenaInput" />
+                        Nueva contraseña
+                        <input type="password" name="nuevaContrasena" id="nuevaContrasenaInput" autocomplete="new-password" />
                       </label>
 
                       <label>
-                        Repite la nueva contrasena
-                        <input type="password" name="repetirNuevaContrasena" id="repetirNuevaContrasenaInput" />
+                        Repite la nueva contraseña
+                        <input type="password" name="repetirNuevaContrasena" id="repetirNuevaContrasenaInput" autocomplete="new-password" />
                       </label>
                     </div>
                   </div>
@@ -347,6 +396,10 @@
 
     <script>
       (function () {
+        const resumen = document.getElementById("perfilResumen");
+        const formulario = document.getElementById("perfilFormulario");
+        const editarPerfil = document.getElementById("editarPerfil");
+        const cancelarPerfil = document.getElementById("cancelarPerfil");
         const input = document.getElementById("fotoUrlInput");
         const preview = document.getElementById("avatarPreview");
         const selectionLabel = document.getElementById("avatarSelectionLabel");
@@ -367,6 +420,29 @@
           return;
         }
 
+        const fotoInicial = input.value;
+
+        function mostrarEdicion() {
+          resumen.hidden = true;
+          formulario.hidden = false;
+          formulario.elements.namedItem("nombreUsuario").focus();
+        }
+
+        editarPerfil.addEventListener("click", mostrarEdicion);
+
+        cancelarPerfil.addEventListener("click", function () {
+          formulario.reset();
+          input.value = fotoInicial;
+          temporalSeleccion = valorActual();
+          pintarSeleccionTemporal();
+          actualizarPreviewYTexto();
+          cerrarModalAvatar();
+          cerrarModalPassword();
+          formulario.hidden = true;
+          resumen.hidden = false;
+          editarPerfil.focus();
+        });
+
         function valorActual() {
           return input.value.trim();
         }
@@ -380,8 +456,9 @@
         function actualizarPreviewYTexto() {
           const valor = valorActual();
           const opcion = opcionPorValor(valor);
-          const etiqueta = opcion ? (opcion.dataset.label || "Avatar por defecto") : "Avatar por defecto";
+          const etiqueta = opcion ? (opcion.dataset.label || "Foto de perfil seleccionada") : "Foto de perfil actual";
           preview.src = valor === "" ? fallback : valor;
+          selectionLabel.textContent = etiqueta;
         }
 
         function pintarSeleccionTemporal() {
@@ -498,6 +575,9 @@
         });
 
         actualizarPreviewYTexto();
+        if (formulario.dataset.error === "true") {
+          mostrarEdicion();
+        }
       })();
     </script>
   </body>
