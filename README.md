@@ -52,6 +52,26 @@ La aplicación sigue una organización por capas:
 - Maven 3.9 o el wrapper incluido en el repositorio.
 - Conexión a Internet para descargar inicialmente los catálogos externos de los juegos.
 
+## Instalación rápida de los requisitos
+
+En Windows 10 u 11, abre PowerShell como administrador y ejecuta:
+
+```powershell
+winget install --exact --id EclipseAdoptium.Temurin.17.JDK --accept-source-agreements --accept-package-agreements
+winget install --exact --id Oracle.MySQL --accept-source-agreements --accept-package-agreements
+```
+
+Después de la instalación, configura una instancia local de MySQL 8 y guarda el usuario y la contraseña elegidos. No es necesario instalar Maven por separado: el proyecto incluye Maven Wrapper y lo descargará automáticamente la primera vez que se ejecute.
+
+En Ubuntu o Debian se pueden instalar los requisitos con:
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jdk mysql-server
+```
+
+Después de instalar Java, cierra y vuelve a abrir la terminal antes de continuar.
+
 ## Preparación de la base de datos
 
 Para crear una instalación nueva, hay que ejecutar el archivo situado en la raíz del proyecto:
@@ -69,9 +89,22 @@ Contraseña: admin
 
 Los scripts de `sql/migrations` deben aplicarse en orden cuando se actualiza una base de datos existente.
 
+Si el comando `mysql` está disponible en la terminal, se puede crear la base de datos desde la raíz del proyecto con:
+
+```powershell
+cmd /c "mysql --user=root --password < BaseDatosTabletopManager.sql"
+```
+
+El comando solicitará la contraseña de MySQL antes de ejecutar el script.
+
 ## Configuración
 
 Las credenciales de MySQL no se guardan en el repositorio. Hay que copiar `.env.example` como `.env` en la raíz del proyecto y completar sus valores:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
 
 ```properties
 TFG_DB_URL=jdbc:mysql://localhost:3306/tfgenrique?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci

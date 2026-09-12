@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Eventos · <c:out value="${comunidadActual.nombre}" /></title>
     <link rel="stylesheet" href="/css/app-shell.css" />
-    <link rel="stylesheet" href="/css/comunidad-visor.css?v=1" />
+    <link rel="stylesheet" href="/css/comunidad-visor.css?v=2" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   </head>
   <body>

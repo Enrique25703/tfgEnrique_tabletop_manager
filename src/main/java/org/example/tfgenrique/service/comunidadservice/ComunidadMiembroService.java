@@ -129,6 +129,52 @@ public class ComunidadMiembroService {
     }
 
     @Transactional
+    public void abandonarComunidad(Long usuarioId, Long comunidadId) {
+        Usuario usuario = buscarUsuario(usuarioId);
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        AfiliacionComunidad afiliacion = buscarAfiliacionActiva(usuario, comunidad);
+
+        if (ComunidadConstantes.esAdministrador(afiliacion.getRolComunidad())
+                && contarAdministradores(comunidad) <= 1) {
+            List<AfiliacionComunidad> miembrosActivos = buscarMiembrosComunidad(comunidad);
+            if (miembrosActivos.size() == 1) {
+                afiliacion.setEstadoAfiliacion(ComunidadConstantes.ESTADO_AFILIACION_INACTIVA);
+                comunidad.setActivo(false);
+                comunidad.setActualizadoEn(LocalDateTime.now());
+                afiliacionComunidadRepository.save(afiliacion);
+                comunidadRepository.save(comunidad);
+                return;
+            }
+            throw new IllegalArgumentException("Debes ceder la propiedad a otro miembro antes de abandonar la comunidad.");
+        }
+
+        afiliacion.setEstadoAfiliacion(ComunidadConstantes.ESTADO_AFILIACION_INACTIVA);
+        afiliacionComunidadRepository.save(afiliacion);
+    }
+
+    @Transactional
+    public void cederPropiedad(Long usuarioActorId, Long comunidadId, Long usuarioNuevoPropietarioId) {
+        Usuario actor = buscarUsuario(usuarioActorId);
+        Comunidad comunidad = buscarComunidad(comunidadId);
+        AfiliacionComunidad afiliacionActor = exigirAdministrador(actor, comunidad);
+
+        if (usuarioActorId.equals(usuarioNuevoPropietarioId)) {
+            throw new IllegalArgumentException("Debes seleccionar a otro miembro de la comunidad.");
+        }
+
+        Usuario nuevoPropietario = buscarUsuario(usuarioNuevoPropietarioId);
+        AfiliacionComunidad afiliacionNuevoPropietario = buscarAfiliacionActiva(nuevoPropietario, comunidad);
+        if (ComunidadConstantes.esAdministrador(afiliacionNuevoPropietario.getRolComunidad())) {
+            throw new IllegalArgumentException("El miembro seleccionado ya es administrador de la comunidad.");
+        }
+
+        afiliacionNuevoPropietario.setRolComunidad(ComunidadConstantes.ROL_ADMINISTRADOR);
+        afiliacionActor.setRolComunidad(ComunidadConstantes.ROL_USUARIO);
+        afiliacionComunidadRepository.save(afiliacionNuevoPropietario);
+        afiliacionComunidadRepository.save(afiliacionActor);
+    }
+
+    @Transactional
     public void cambiarPrivacidad(Long usuarioActorId, Long comunidadId, String privacidad) {
         Comunidad comunidad = buscarComunidad(comunidadId);
         cambiarAjustes(usuarioActorId, comunidadId, privacidad, comunidad.getLogoUrl());

@@ -1,0 +1,50 @@
+TABLETOP MANAGER - FRAMEWORKS Y DEPENDENCIAS
+============================================
+
+Este archivo sirve como inventario legible de los recursos del proyecto.
+Maven toma las dependencias reales de pom.xml y descarga automáticamente
+las versiones compatibles gestionadas por Spring Boot 4.0.3.
+
+COMANDO DE INSTALACIÓN
+----------------------
+
+Windows (PowerShell):
+  .\mvnw.cmd dependency:go-offline
+
+Linux o macOS:
+  ./mvnw dependency:go-offline
+
+DEPENDENCIAS DE LA APLICACIÓN
+-----------------------------
+
+- Spring Boot 4.0.3
+- Spring Boot Starter
+- Spring Boot Starter Web
+- Spring Boot Actuator
+- Spring Data JPA
+- Hibernate ORM
+- Jackson Databind
+- Apache Tomcat Embed Jasper
+- Jakarta Servlet JSP JSTL API 3.0.1
+- Jakarta Servlet JSP JSTL 3.0.1
+- Spring Security Crypto (BCrypt)
+- MySQL Connector/J
+- Apache PDFBox 3.0.7
+
+DEPENDENCIAS DE PRUEBAS
+-----------------------
+
+- Spring Boot Starter Test
+- JUnit 5
+- Mockito
+- H2 Database
+
+REQUISITOS EXTERNOS
+-------------------
+
+- JDK 17
+- MySQL 8
+- Conexión a Internet durante la primera descarga de dependencias y catálogos
+
+Los requisitos externos se instalan siguiendo el apartado
+"Instalación rápida de los requisitos" del README.md.

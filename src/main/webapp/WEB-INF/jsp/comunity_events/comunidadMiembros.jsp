@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Miembros · <c:out value="${comunidadActual.nombre}" /></title>
     <link rel="stylesheet" href="/css/app-shell.css" />
-    <link rel="stylesheet" href="/css/comunidad-visor.css?v=1" />
+    <link rel="stylesheet" href="/css/comunidad-visor.css?v=2" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   </head>
   <body>
@@ -40,7 +40,7 @@
                       <td><span class="role-badge"><c:out value="${miembro.rol}" /></span></td>
                       <td><c:out value="${miembro.miembroDesde}" /></td>
                       <td><div class="member-actions">
-                        <c:if test="${visor.puedeGestionar}"><button class="icon-action manage-member-button" type="button" aria-label="Gestionar miembro" data-user-id="${miembro.usuarioId}" data-user-name="<c:out value='${miembro.nombreUsuario}' />" data-user-photo="<c:out value='${miembro.fotoUrl}' />" data-user-role="<c:out value='${miembro.rol}' />" data-can-promote="${miembro.puedePromover}" data-can-expel="${miembro.puedeExpulsar}">⚙</button></c:if>
+                        <c:if test="${visor.puedeGestionar}"><button class="icon-action manage-member-button" type="button" aria-label="Gestionar miembro" data-user-id="${miembro.usuarioId}" data-user-name="<c:out value='${miembro.nombreUsuario}' />" data-user-photo="<c:out value='${miembro.fotoUrl}' />" data-user-role="<c:out value='${miembro.rol}' />" data-can-promote="${miembro.puedePromover}" data-can-transfer="${miembro.puedeCederPropiedad}" data-can-expel="${miembro.puedeExpulsar}">⚙</button></c:if>
                         <c:if test="${not miembro.usuarioActual}"><button class="icon-action duel-member-button" type="button" title="Desafiar a una partida" aria-label="Desafiar a <c:out value='${miembro.nombreUsuario}' />" data-user-id="${miembro.usuarioId}" data-user-name="<c:out value='${miembro.nombreUsuario}' />">⚔</button></c:if>
                       </div></td>
                     </tr>
@@ -57,7 +57,7 @@
       <div class="viewer-modal-backdrop" data-close-modal></div>
       <section class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="tituloGestionMiembro">
         <header><div><h2 id="tituloGestionMiembro">Gestionar miembro</h2><p>Las acciones se aplicarán inmediatamente.</p></div><button class="modal-close" type="button" data-close-modal aria-label="Cerrar">×</button></header>
-        <div class="member-modal-body"><div class="member-modal-profile"><span class="member-avatar" id="avatarGestionMiembro">♙</span><div><strong id="nombreGestionMiembro"></strong><p id="rolGestionMiembro" class="page-subtitle"></p></div></div><form id="formPromoverMiembro" method="post"><button class="button-primary" type="submit">Promover a administrador</button></form><form id="formExpulsarMiembro" method="post" onsubmit="return confirm('¿Seguro que quieres expulsar a este miembro?');"><button class="button-secondary danger-action" type="submit">Expulsar de la comunidad</button></form><p id="sinAccionesMiembro" class="page-subtitle" hidden>No hay acciones disponibles para este miembro.</p></div>
+        <div class="member-modal-body"><div class="member-modal-profile"><span class="member-avatar" id="avatarGestionMiembro">♙</span><div><strong id="nombreGestionMiembro"></strong><p id="rolGestionMiembro" class="page-subtitle"></p></div></div><form id="formPromoverMiembro" method="post"><button class="button-primary" type="submit">Promover a administrador</button></form><form id="formCederPropiedad" method="post" onsubmit="return confirm('¿Seguro que quieres ceder la propiedad a este miembro? Dejarás de ser administrador.');"><button class="button-secondary" type="submit">Ceder propiedad</button></form><form id="formExpulsarMiembro" method="post" onsubmit="return confirm('¿Seguro que quieres expulsar a este miembro?');"><button class="button-secondary danger-action" type="submit">Expulsar de la comunidad</button></form><p id="sinAccionesMiembro" class="page-subtitle" hidden>No hay acciones disponibles para este miembro.</p></div>
       </section>
     </div>
 
@@ -82,6 +82,6 @@
 
     <script>window.COMUNIDAD_ID=<c:out value="${comunidadActual.id}" />;</script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="/js/comunidad-miembros.js?v=3"></script>
+    <script src="/js/comunidad-miembros.js?v=4"></script>
   </body>
 </html>

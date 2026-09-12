@@ -59,6 +59,7 @@ public class ComunidadVisorService {
                     miembroAdministrador,
                     esUsuarioActual,
                     contexto.administrador() && !miembroAdministrador,
+                    contexto.administrador() && !esUsuarioActual && !miembroAdministrador,
                     puedeExpulsar
             );
         }).toList();
@@ -240,6 +241,7 @@ public class ComunidadVisorService {
             boolean administrador,
             boolean usuarioActual,
             boolean puedePromover,
+            boolean puedeCederPropiedad,
             boolean puedeExpulsar
     ) {
     }

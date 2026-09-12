@@ -17,7 +17,12 @@
       </div>
       <p class="community-description"><c:out value="${comunidadActual.descripcion}" /></p>
     </div>
-    <a class="button-secondary back-communities" href="/comunidades">← Volver a comunidades</a>
+    <div class="community-header-actions">
+      <a class="button-secondary back-communities" href="/comunidades">← Volver a comunidades</a>
+      <form method="post" action="/comunidades/${comunidadActual.id}/abandonar" onsubmit="return confirm('¿Seguro que quieres abandonar esta comunidad?');">
+        <button class="leave-community-button" type="submit">Abandonar comunidad</button>
+      </form>
+    </div>
   </div>
   <nav class="viewer-tabs" aria-label="Secciones de la comunidad">
     <a class="viewer-tab${pestanaActiva eq 'miembros' ? ' active' : ''}" href="/comunidades/${comunidadActual.id}/miembros">♙ Miembros</a>

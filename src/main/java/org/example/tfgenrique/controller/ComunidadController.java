@@ -236,6 +236,44 @@ public class ComunidadController {
         );
     }
 
+    @PostMapping("/comunidades/{comunidadId}/abandonar")
+    public String abandonarComunidad(
+            HttpSession session,
+            @PathVariable Long comunidadId,
+            RedirectAttributes redirectAttributes
+    ) {
+        Long usuarioId = obtenerUsuarioId(session);
+        if (usuarioId == null) {
+            return "redirect:/";
+        }
+
+        try {
+            comunidadMiembroService.abandonarComunidad(usuarioId, comunidadId);
+            redirectAttributes.addFlashAttribute("mensajeOk", "Has abandonado la comunidad.");
+            return "redirect:/comunidades/mis-comunidades";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
+            return "redirect:/comunidades/" + comunidadId + "/miembros";
+        }
+    }
+
+    @PostMapping("/comunidades/{comunidadId}/miembros/{usuarioMiembroId}/ceder-propiedad")
+    public String cederPropiedad(
+            HttpSession session,
+            @PathVariable Long comunidadId,
+            @PathVariable Long usuarioMiembroId,
+            RedirectAttributes redirectAttributes
+    ) {
+        return ejecutarAccion(
+                session,
+                redirectAttributes,
+                "/comunidades/" + comunidadId + "/miembros",
+                "Has cedido la propiedad de la comunidad.",
+                () -> comunidadMiembroService.cederPropiedad(
+                        obtenerUsuarioId(session), comunidadId, usuarioMiembroId)
+        );
+    }
+
     @PostMapping("/comunidades/{comunidadId}/miembros/{usuarioMiembroId}/duelo")
     public String crearDuelo(
             HttpSession session,
