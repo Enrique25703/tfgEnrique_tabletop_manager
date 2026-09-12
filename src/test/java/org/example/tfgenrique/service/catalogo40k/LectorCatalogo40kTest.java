@@ -23,6 +23,34 @@ class LectorCatalogo40kTest {
     private final LectorCatalogo40k lector = new LectorCatalogo40k();
 
     @Test
+    void conservaUnicodeYClasificaUnidadesPropiasAliadasYLegendsDesdeLosEnlaces() throws Exception {
+        String ejercito = """
+                {"catalogue":{"id":"ej","name":"Imperium - Prueba",
+                 "entryLinks":[{"id":"enlace","name":"Bastión [Legends]","type":"selectionEntry","targetId":"u"}],
+                 "catalogueLinks":[{"targetId":"aliados","importRootEntries":true}]}}
+                """;
+        String biblioteca = """
+                {"catalogue":{"id":"lib","name":"Imperium - Prueba - Library","library":true,
+                 "sharedSelectionEntries":[{"id":"u","name":"Bastión del cañón","type":"unit",
+                   "categoryLinks":[{"name":"Fortification"}]}]}}
+                """;
+        String aliados = """
+                {"catalogue":{"id":"aliados","name":"Imperium - Imperial Knights - Library","library":true,
+                 "sharedSelectionEntries":[{"id":"knight","name":"Caballero","type":"unit"}]}}
+                """;
+        var catalogo = lector.leerCatalogo(crearZip(new ArchivoJson("ej.json", ejercito),
+                new ArchivoJson("lib.json", biblioteca), new ArchivoJson("aliados.json", aliados)));
+        var bastion = catalogo.buscarUnidad("Imperium", "Prueba", "Bastión del cañón");
+        assertNotNull(bastion);
+        assertTrue(bastion.clasificacion().legends());
+        assertTrue(bastion.clasificacion().estructura());
+        assertFalse(bastion.clasificacion().aliado());
+        assertTrue(catalogo.buscarUnidad("Imperium", "Prueba", "Caballero").clasificacion().aliado());
+        var pagina = new Catalogo40kService().prepararPaginaCatalogo(catalogo, "Imperium", "Prueba", null);
+        assertEquals(bastion.clasificacion(), pagina.ejercito().unidades().get(0).clasificacion());
+    }
+
+    @Test
     void leeEjercitoJsonConUnidadesDefinidasEnUnaBiblioteca() throws Exception {
         String ejercitoJson = """
                 {

@@ -71,6 +71,13 @@
         margin-bottom: 16px;
       }
 
+      .field small {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
       label {
         display: block;
         margin-bottom: 8px;
@@ -155,7 +162,10 @@
         </div>
         <div class="field">
           <label for="passwordRegistro">Contrasena</label>
-          <input id="passwordRegistro" name="passwordRegistro" type="password" placeholder="Crea una contrasena" />
+          <input id="passwordRegistro" name="passwordRegistro" type="password" minlength="6"
+                 autocomplete="new-password" aria-describedby="passwordRegistroAyuda"
+                 placeholder="Crea una contrasena" required />
+          <small id="passwordRegistroAyuda">Utiliza al menos 6 caracteres.</small>
         </div>
         <button class="button alt" type="submit">Registrarse</button>
       </form>

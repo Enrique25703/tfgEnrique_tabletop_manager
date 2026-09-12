@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
@@ -65,9 +67,11 @@ public class RondaPartida {
     @Column(name = "total_acumulado_jugador2", nullable = false)
     private Integer totalAcumuladoJugador2;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detalle_jugador1", columnDefinition = "json")
     private String detalleJugador1;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detalle_jugador2", columnDefinition = "json")
     private String detalleJugador2;
 

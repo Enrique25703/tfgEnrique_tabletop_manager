@@ -396,6 +396,28 @@ CREATE TABLE `notificaciones_usuario` (
 -- Datos semilla minimos
 -- ---------------------------------------------------------------------------
 
+-- Administrador inicial de la aplicación.
+-- Credenciales: usuario "admin", contraseña "admin".
+INSERT INTO `usuarios` (
+  `nombre_usuario`,
+  `email`,
+  `foto_url`,
+  `contrasena_hash`,
+  `rol`,
+  `activo`,
+  `creado_en`,
+  `actualizado_en`
+) VALUES (
+  'admin',
+  'admin@tabletopmanager.local',
+  NULL,
+  '$2a$10$3FMy1JTb5NDiMB7gJ70pEOGKjPiFkFrtuljp.UJ3EIvrlwpigKWMi',
+  'ADMIN',
+  1,
+  NOW(),
+  NOW()
+);
+
 INSERT INTO `sistemas_juego` (`codigo`, `nombre`, `edicion`, `activo`, `creado_en`) VALUES
   ('WH40K_11', 'Warhammer 40,000', '11a edicion', 1, NOW()),
   ('AOS_4', 'Age of Sigmar', '4a edicion', 1, NOW());

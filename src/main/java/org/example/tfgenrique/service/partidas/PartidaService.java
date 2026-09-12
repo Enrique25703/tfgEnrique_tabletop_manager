@@ -17,6 +17,7 @@ import org.example.tfgenrique.entity.SistemaJuego;
 import org.example.tfgenrique.entity.Usuario;
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PartidaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String FORMATO_40K = "WH40K_11";
+    private static final String FORMATO_AOS = "AOS_4";
     private static final String ESTILO_EQUILIBRADO = "EQUILIBRADO";
     private static final String ESTILO_ASIMETRICO = "ASIMETRICO";
     private static final String ESTADO_CREADA = "CREADA";
@@ -43,6 +45,8 @@ public class PartidaService {
     private final Misiones40kService misiones40kService;
     private final Catalogo40kService catalogo40kService;
     private final CreacionListasService creacionListasService;
+    private final DeploymentAosService deploymentAosService;
+    private final CatalogoAosService catalogoAosService;
 
     public PartidaService(
             UsuarioRepository usuarioRepository,
@@ -52,7 +56,9 @@ public class PartidaService {
             Deployment40kService deployment40kService,
             Misiones40kService misiones40kService,
             Catalogo40kService catalogo40kService,
-            CreacionListasService creacionListasService
+            CreacionListasService creacionListasService,
+            DeploymentAosService deploymentAosService,
+            CatalogoAosService catalogoAosService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.sistemaJuegoRepository = sistemaJuegoRepository;
@@ -62,6 +68,8 @@ public class PartidaService {
         this.misiones40kService = misiones40kService;
         this.catalogo40kService = catalogo40kService;
         this.creacionListasService = creacionListasService;
+        this.deploymentAosService = deploymentAosService;
+        this.catalogoAosService = catalogoAosService;
     }
 
     public NuevaPartidaView prepararNuevaPartida(Long usuarioId) {
@@ -73,8 +81,8 @@ public class PartidaService {
     public Long crearPartida(Long usuarioId, String sistemaJuegoCodigo, String estiloJuego) {
         Usuario usuario = buscarUsuario(usuarioId);
         String codigo = normalizar(sistemaJuegoCodigo);
-        if (!FORMATO_40K.equals(codigo)) {
-            throw new IllegalArgumentException("Por ahora solo se pueden crear partidas de Warhammer 40k.");
+        if (!FORMATO_40K.equals(codigo) && !FORMATO_AOS.equals(codigo)) {
+            throw new IllegalArgumentException("Selecciona Warhammer 40k o Age of Sigmar.");
         }
 
         SistemaJuego sistemaJuego = resolverSistemaJuego(codigo);
@@ -92,7 +100,7 @@ public class PartidaService {
         partida.setUsarCartasGiro(false);
         partida.setJugadorPrimero(JUGADOR_USUARIO);
         partida.setJugadorDefensor(JUGADOR_USUARIO);
-        partida.setEstiloJuego(normalizarEstiloJuego(estiloJuego));
+        partida.setEstiloJuego(FORMATO_AOS.equals(codigo) ? ESTILO_EQUILIBRADO : normalizarEstiloJuego(estiloJuego));
         partida.setNombreMision(MISION_CUSTOM);
         partida.setEstado(ESTADO_CREADA);
         partida.setCreadoEn(ahora);
@@ -106,7 +114,7 @@ public class PartidaService {
     public JugadoresView prepararJugadores(Long usuarioId, Long partidaId) {
         Partida partida = buscarPartidaUsuario(usuarioId, partidaId);
         Usuario usuario = partida.getCreadoPorUsuario();
-        return new JugadoresView(partida, obtenerFacciones(), obtenerListasUsuario(usuario));
+        return new JugadoresView(partida, obtenerFacciones(partida), obtenerListasUsuario(usuario, codigoJuego(partida)));
     }
 
     @Transactional
@@ -117,7 +125,7 @@ public class PartidaService {
         String jugador1Faccion = crearTextoEjercito(request.jugador1Faccion(), request.jugador1Ejercito());
         String jugador2Nombre = normalizar(request.jugador2Nombre());
         String jugador2Faccion = crearTextoEjercito(request.jugador2Faccion(), request.jugador2Ejercito());
-        TextoLista listaJugador1 = resolverListaJugador1(partida.getCreadoPorUsuario(), request);
+        TextoLista listaJugador1 = resolverListaJugador1(partida.getCreadoPorUsuario(), request, codigoJuego(partida));
 
         if (jugador1Nombre.isBlank()) {
             jugador1Nombre = partida.getCreadoPorUsuario().getNombreUsuario();
@@ -139,8 +147,13 @@ public class PartidaService {
         partidaRepository.save(partida);
     }
 
+    @Transactional(readOnly = true)
     public ConfiguracionView prepararConfiguracion(Long usuarioId, Long partidaId) {
         Partida partida = buscarPartidaUsuario(usuarioId, partidaId);
+        if (esAos(partida)) {
+            return new ConfiguracionView(partida, List.of(), List.of(), deploymentAosService.obtenerDespliegues(),
+                    List.of(), true, "Age of Sigmar");
+        }
         Deployment40kService.CatalogoDesplieguesView catalogo = deployment40kService.obtenerCatalogo();
         return new ConfiguracionView(
                 partida,
@@ -156,14 +169,18 @@ public class PartidaService {
     @Transactional
     public void guardarConfiguracion(Long usuarioId, Long partidaId, ConfiguracionRequest request) {
         Partida partida = buscarPartidaUsuario(usuarioId, partidaId);
-        String estiloJuego = normalizarEstiloJuego(partida.getEstiloJuego());
-        String tipoMision = normalizarTipoMision(request.tipoMision());
-        Deployment40kService.CatalogoDesplieguesView catalogo = deployment40kService.obtenerCatalogo();
-        Misiones40kService.CombinacionMisionView combinacionFija = buscarCombinacionFija(tipoMision);
+        boolean aos = esAos(partida);
+        String estiloJuego = aos ? ESTILO_EQUILIBRADO : normalizarEstiloJuego(partida.getEstiloJuego());
+        String tipoMision = aos ? MISION_CUSTOM : normalizarTipoMision(request.tipoMision());
+        Deployment40kService.CatalogoDesplieguesView catalogo = aos ? null : deployment40kService.obtenerCatalogo();
+        Misiones40kService.CombinacionMisionView combinacionFija = aos ? null : buscarCombinacionFija(tipoMision);
 
         String layout = null;
         String despliegue;
-        if (esJuegoEquilibrado(estiloJuego)) {
+        if (aos) {
+            despliegue = validarSeleccionVisual(request.despliegue(), deploymentAosService.obtenerDespliegues(),
+                    "Debes elegir uno de los cinco despliegues de Age of Sigmar.");
+        } else if (esJuegoEquilibrado(estiloJuego)) {
             layout = validarLayoutConfigurado(
                     request.layout(),
                     catalogo.layouts(),
@@ -200,7 +217,7 @@ public class PartidaService {
         partida.setJugadorDefensor(validarJugador(request.jugadorDefensor()));
         partida.setJugadorPrimero(validarJugador(request.jugadorPrimero()));
         partida.setMostrarCommandPoints(request.mostrarCommandPoints());
-        partida.setUsarCartasGiro(request.usarCartasGiro());
+        partida.setUsarCartasGiro(!aos && request.usarCartasGiro());
         partida.setNombreMision(tipoMision);
         partida.setEstado(ESTADO_CONFIGURADA);
         partida.setIniciadaEn(partida.getIniciadaEn() == null ? LocalDateTime.now() : partida.getIniciadaEn());
@@ -208,6 +225,7 @@ public class PartidaService {
         partidaRepository.save(partida);
     }
 
+    @Transactional(readOnly = true)
     public RondaView prepararRonda(Long usuarioId, Long partidaId, int numeroRonda) {
         Partida partida = buscarPartidaUsuario(usuarioId, partidaId);
         int ronda = ajustarRonda(numeroRonda);
@@ -225,8 +243,8 @@ public class PartidaService {
                 crearResumenConfiguracion(partida),
                 izquierda,
                 derecha,
-                misiones40kService.obtenerPrimeraMisionPrincipal(),
-                misiones40kService.obtenerMisionesSecundarias(),
+                misiones40kService.obtenerPrimeraMisionPrincipal(codigoJuego(partida)),
+                misiones40kService.obtenerMisionesSecundarias(codigoJuego(partida)),
                 rondaPartida
         );
     }
@@ -451,8 +469,8 @@ public class PartidaService {
 
         SistemaJuego nuevo = new SistemaJuego();
         nuevo.setCodigo(codigo);
-        nuevo.setNombre("Warhammer 40.000");
-        nuevo.setEdicion("11a edicion");
+        nuevo.setNombre(FORMATO_AOS.equals(codigo) ? "Age of Sigmar" : "Warhammer 40.000");
+        nuevo.setEdicion(FORMATO_AOS.equals(codigo) ? "4a edicion" : "11a edicion");
         nuevo.setActivo(true);
         nuevo.setCreadoEn(LocalDateTime.now());
         return sistemaJuegoRepository.save(nuevo);
@@ -595,6 +613,12 @@ public class PartidaService {
     }
 
     private ResumenConfiguracionView crearResumenConfiguracion(Partida partida) {
+        if (esAos(partida)) {
+            var despliegue = buscarOpcionVisual(partida.getDespliegueMision(), deploymentAosService.obtenerDespliegues());
+            return new ResumenConfiguracionView("Age of Sigmar",
+                    misiones40kService.obtenerPrimeraMisionPrincipal(FORMATO_AOS).titulo(), "",
+                    despliegue == null ? "" : despliegue.nombre());
+        }
         Deployment40kService.OpcionVisualView layout = deployment40kService.buscarLayout(partida.getLayoutMision());
         Deployment40kService.OpcionVisualView despliegue = deployment40kService.buscarDespliegue(partida.getDespliegueMision());
         return new ResumenConfiguracionView(
@@ -605,7 +629,13 @@ public class PartidaService {
         );
     }
 
-    private List<FaccionPartidaView> obtenerFacciones() {
+    private List<FaccionPartidaView> obtenerFacciones(Partida partida) {
+        if (esAos(partida)) {
+            var catalogo = catalogoAosService.getData();
+            if (catalogo == null) catalogo = catalogoAosService.actualizarCatalogo();
+            return catalogo.facciones().entrySet().stream()
+                    .map(e -> new FaccionPartidaView(e.getKey(), new ArrayList<>(e.getValue().keySet()))).toList();
+        }
         Catalogo40kService.Catalogo40kData catalogo = catalogo40kService.getData();
         if (catalogo == null) {
             catalogo = catalogo40kService.actualizarCatalogo();
@@ -618,9 +648,10 @@ public class PartidaService {
         return facciones;
     }
 
-    private List<ListaPartidaView> obtenerListasUsuario(Usuario usuario) {
+    private List<ListaPartidaView> obtenerListasUsuario(Usuario usuario, String codigoJuego) {
         List<ListaPartidaView> listas = new ArrayList<>();
         for (CreacionListasService.ListaGuardadaView lista : creacionListasService.obtenerListasGuardadas(usuario.getNombreUsuario())) {
+            if (!codigoJuego.equals(lista.formatoJuego())) continue;
             listas.add(new ListaPartidaView(
                     lista.listaId(),
                     lista.nombreLista(),
@@ -633,7 +664,7 @@ public class PartidaService {
         return listas;
     }
 
-    private TextoLista resolverListaJugador1(Usuario usuario, JugadoresRequest request) {
+    private TextoLista resolverListaJugador1(Usuario usuario, JugadoresRequest request, String codigoJuego) {
         String tipo = normalizar(request.jugador1ListaTipo());
         if (tipo.isBlank() || "NONE".equals(tipo)) {
             return new TextoLista(null, 0);
@@ -645,11 +676,22 @@ public class PartidaService {
         try {
             Long listaId = Long.parseLong(tipo);
             CreacionListasService.ListaGuardadaView lista = creacionListasService.obtenerListaGuardadaPorId(usuario.getNombreUsuario(), listaId);
+            if (!codigoJuego.equals(lista.formatoJuego())) {
+                throw new IllegalArgumentException("La lista elegida debe pertenecer al sistema de juego de la partida.");
+            }
             String texto = lista.nombreLista() + " (" + lista.puntosActuales() + "/" + lista.limitePuntos() + " pts)";
             return new TextoLista(texto, lista.puntosActuales());
         } catch (NumberFormatException ex) {
             return new TextoLista(null, 0);
         }
+    }
+
+    private String codigoJuego(Partida partida) {
+        return partida.getSistemaJuego() == null ? FORMATO_40K : partida.getSistemaJuego().getCodigo();
+    }
+
+    private boolean esAos(Partida partida) {
+        return FORMATO_AOS.equals(codigoJuego(partida));
     }
 
     private String crearTextoEjercito(String faccion, String ejercito) {

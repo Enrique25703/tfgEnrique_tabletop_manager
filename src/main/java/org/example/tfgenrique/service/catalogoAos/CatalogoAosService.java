@@ -1,6 +1,8 @@
 package org.example.tfgenrique.service.catalogoAos;
 
 import org.springframework.stereotype.Service;
+import org.example.tfgenrique.service.catalogos.ClasificacionUnidad;
+import org.example.tfgenrique.service.catalogos.DescargadorCatalogos;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -11,10 +13,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,81 +42,83 @@ public class CatalogoAosService {
     );
 
     // Cliente HTTP reutilizable para descargar el ZIP remoto.
-    private final HttpClient clienteHttp = HttpClient.newHttpClient();
+    private final DescargadorCatalogos descargador = new DescargadorCatalogos();
 
     // Ultima version del catalogo cargada en memoria. Sirve como cache simple.
     private Catalogo40kData datos;
 
     public synchronized Catalogo40kData actualizarCatalogo() {
-        try {
-            // Descarga el ZIP completo con todos los .cat del repositorio.
-            HttpRequest peticion = HttpRequest.newBuilder(URI.create(URL_CATALOGO)).GET().build();
-            HttpResponse<InputStream> respuesta = clienteHttp.send(peticion, HttpResponse.BodyHandlers.ofInputStream());
-            if (respuesta.statusCode() < 200 || respuesta.statusCode() >= 300) {
-                throw new IllegalStateException("GitHub respondio con estado " + respuesta.statusCode());
-            }
-
-            // Aqui iremos guardando cada .cat parseado a una estructura intermedia.
-            List<ArchivoCatalogo> archivosCatalogo = new ArrayList<>();
-
-            // El resultado final se organiza como:
-            // faccion -> (nombreEjercito -> ejercito)
-            Map<String, Map<String, Ejercito40k>> catalogoPorFaccion = new TreeMap<>();
-
-            // El ZIP contiene muchos .cat; cada uno representa un catalogo o una libreria auxiliar.
-            try (ZipInputStream flujoZip = new ZipInputStream(respuesta.body())) {
-                ZipEntry entradaZip;
-                while ((entradaZip = flujoZip.getNextEntry()) != null) {
-                    if (!entradaZip.isDirectory() && entradaZip.getName().endsWith(".cat")) {
-                        // readAllBytes consume solo la entrada actual del ZIP.
-                        ArchivoCatalogo archivoCatalogo = leerArchivoCatalogo(new ByteArrayInputStream(flujoZip.readAllBytes()));
-                        if (archivoCatalogo != null) {
-                            archivosCatalogo.add(archivoCatalogo);
-                        }
-                    }
-                    flujoZip.closeEntry();
-                }
-            }
-
-            // Primer indice: id de unidad raiz -> nodo XML de esa unidad.
-            Map<String, Element> unidadesRaizPorId = new HashMap<>();
-            Map<String, Element> selectionEntriesPorId = new HashMap<>();
-            Map<String, Element> selectionEntryGroupsPorId = new HashMap<>();
-
-            // Segundo indice: id de catalogo -> archivoCatalogo.
-            // Hace falta para resolver imports entre catalogos.
-            Map<String, ArchivoCatalogo> archivosCatalogoPorId = new HashMap<>();
-            for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
-                archivosCatalogoPorId.put(archivoCatalogo.id(), archivoCatalogo);
-                for (Element unidadRaiz : archivoCatalogo.unidadesRaiz()) {
-                    unidadesRaizPorId.put(unidadRaiz.getAttribute("id"), unidadRaiz);
-                }
-                selectionEntriesPorId.putAll(archivoCatalogo.selectionEntriesPorId());
-                selectionEntryGroupsPorId.putAll(archivoCatalogo.selectionEntryGroupsPorId());
-            }
-
-            // Una vez indexado todo, se compone cada ejercito resolviendo sus imports y enlaces.
-            for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
-                Ejercito40k ejercito = crearEjercito(
-                        archivoCatalogo,
-                        unidadesRaizPorId,
-                        archivosCatalogoPorId,
-                        selectionEntriesPorId,
-                        selectionEntryGroupsPorId
-                );
-                if (ejercito != null) {
-                    catalogoPorFaccion
-                            .computeIfAbsent(ejercito.faccion(), clave -> new TreeMap<>())
-                            .put(ejercito.nombre(), ejercito);
-                }
-            }
-
-            // Se guarda fecha/hora para saber cuando se refresco el cache.
-            datos = new Catalogo40kData(catalogoPorFaccion, LocalDateTime.now());
+        try (InputStream flujoEntrada = descargador.descargar(URL_CATALOGO)) {
+            datos = leerCatalogo(flujoEntrada);
+        } catch (HttpTimeoutException ex) {
+            throw new IllegalStateException("Se agotó el tiempo de espera al descargar el catálogo de Age of Sigmar. Inténtalo de nuevo.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Se interrumpio la actualizacion del catálogo de Age of Sigmar", ex);
         } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo actualizar el catalogo de Age of Sigmar", ex);
+            throw new IllegalStateException("No se pudo actualizar el catálogo de Age of Sigmar", ex);
         }
         return datos;
+    }
+
+    Catalogo40kData leerCatalogo(InputStream flujoEntrada) throws Exception {
+        // Aqui iremos guardando cada .cat parseado a una estructura intermedia.
+        List<ArchivoCatalogo> archivosCatalogo = new ArrayList<>();
+
+        // El resultado final se organiza como:
+        // faccion -> (nombreEjercito -> ejercito)
+        Map<String, Map<String, Ejercito40k>> catalogoPorFaccion = new TreeMap<>();
+
+        // El ZIP contiene muchos .cat; cada uno representa un catalogo o una libreria auxiliar.
+        try (ZipInputStream flujoZip = new ZipInputStream(flujoEntrada)) {
+            ZipEntry entradaZip;
+            while ((entradaZip = flujoZip.getNextEntry()) != null) {
+                if (!entradaZip.isDirectory() && entradaZip.getName().endsWith(".cat")) {
+                    // readAllBytes consume solo la entrada actual del ZIP.
+                    ArchivoCatalogo archivoCatalogo = leerArchivoCatalogo(new ByteArrayInputStream(flujoZip.readAllBytes()));
+                    if (archivoCatalogo != null) {
+                        archivosCatalogo.add(archivoCatalogo);
+                    }
+                }
+                flujoZip.closeEntry();
+            }
+        }
+
+        // Primer indice: id de unidad raiz -> nodo XML de esa unidad.
+        Map<String, Element> unidadesRaizPorId = new HashMap<>();
+        Map<String, Element> selectionEntriesPorId = new HashMap<>();
+        Map<String, Element> selectionEntryGroupsPorId = new HashMap<>();
+
+        // Segundo indice: id de catalogo -> archivoCatalogo.
+        // Hace falta para resolver imports entre catalogos.
+        Map<String, ArchivoCatalogo> archivosCatalogoPorId = new HashMap<>();
+        for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
+            archivosCatalogoPorId.put(archivoCatalogo.id(), archivoCatalogo);
+            for (Element unidadRaiz : archivoCatalogo.unidadesRaiz()) {
+                unidadesRaizPorId.put(unidadRaiz.getAttribute("id"), unidadRaiz);
+            }
+            selectionEntriesPorId.putAll(archivoCatalogo.selectionEntriesPorId());
+            selectionEntryGroupsPorId.putAll(archivoCatalogo.selectionEntryGroupsPorId());
+        }
+
+        // Una vez indexado todo, se compone cada ejercito resolviendo sus imports y enlaces.
+        for (ArchivoCatalogo archivoCatalogo : archivosCatalogo) {
+            Ejercito40k ejercito = crearEjercito(
+                    archivoCatalogo,
+                    unidadesRaizPorId,
+                    archivosCatalogoPorId,
+                    selectionEntriesPorId,
+                    selectionEntryGroupsPorId
+            );
+            if (ejercito != null) {
+                catalogoPorFaccion
+                        .computeIfAbsent(ejercito.faccion(), clave -> new TreeMap<>())
+                        .put(ejercito.nombre(), ejercito);
+            }
+        }
+
+        // La fecha identifica la versión que se ha terminado de leer.
+        return new Catalogo40kData(catalogoPorFaccion, LocalDateTime.now());
     }
 
     public Catalogo40kData getData() {
@@ -173,7 +174,8 @@ public class CatalogoAosService {
                         valorSeguro(unidad.puntos()),
                         valorSeguro(unidad.roles()),
                         valorSeguro(unidad.palabrasClaveFaccion()),
-                        valorSeguro(unidad.palabrasClave())
+                        valorSeguro(unidad.palabrasClave()),
+                        unidad.clasificacion()
                 ));
             }
             detalle = new EjercitoCatalogoDetalleView(
@@ -215,7 +217,7 @@ public class CatalogoAosService {
         for (Habilidad40k habilidad : unidad.habilidadesDetalle()) {
             habilidades.add(new HabilidadUnidadView(
                     valorSeguro(habilidad.nombre()),
-                    valorSeguroONulo(habilidad.descripcion()).isBlank() ? "Sin descripcion" : habilidad.descripcion().trim()
+                    valorSeguroONulo(habilidad.descripcion()).isBlank() ? "Sin descripción" : habilidad.descripcion().trim()
             ));
         }
 
@@ -306,6 +308,7 @@ public class CatalogoAosService {
                 .map(unidad -> leerUnidad(
                         unidad.entradaUnidad(),
                         unidad.enlaceCatalogo(),
+                        archivoCatalogo.nombre(),
                         selectionEntriesPorId,
                         selectionEntryGroupsPorId
                 ))
@@ -342,7 +345,7 @@ public class CatalogoAosService {
             Element unidadDestino = unidadesRaizPorId.get(enlaceUnidad.getAttribute("targetId"));
             if (unidadDestino != null && esUnidadVisible(unidadDestino)) {
                 // En AoS los perfiles suelen residir en una libreria compartida, pero el
-                // coste actualizado se declara en el entryLink del catalogo de faccion.
+                // coste actualizado se declara en el entryLink del catálogo de faccion.
                 // Se conservan ambos nodos para no perder los puntos al resolver el enlace.
                 String idUnidad = unidadDestino.getAttribute("id");
                 UnidadCatalogoResuelta candidata = new UnidadCatalogoResuelta(unidadDestino, enlaceUnidad);
@@ -444,6 +447,7 @@ public class CatalogoAosService {
     private Unidad40k leerUnidad(
             Element entradaUnidad,
             Element enlaceCatalogo,
+            String catalogoSeleccionado,
             Map<String, Element> selectionEntriesPorId,
             Map<String, Element> selectionEntryGroupsPorId
     ) {
@@ -523,7 +527,8 @@ public class CatalogoAosService {
                 estadisticas,
                 habilidades,
                 gruposMiniaturas,
-                opcionesComposicion
+                opcionesComposicion,
+                ClasificacionUnidad.leer(entradaUnidad, enlaceCatalogo, catalogoSeleccionado)
         );
     }
 
@@ -1351,7 +1356,8 @@ public class CatalogoAosService {
             String puntos,
             String roles,
             String palabrasClaveFaccion,
-            String palabrasClave
+            String palabrasClave,
+            ClasificacionUnidad clasificacion
     ) {
     }
 
@@ -1406,8 +1412,25 @@ public class CatalogoAosService {
             List<Estadistica40k> estadisticas,
             List<Habilidad40k> habilidadesDetalle,
             List<GrupoMiniaturas40k> gruposMiniaturas,
-            List<OpcionComposicion40k> opcionesComposicion
+            List<OpcionComposicion40k> opcionesComposicion,
+            ClasificacionUnidad clasificacion
     ) {
+        public Unidad40k(
+            String nombre,
+            String puntos,
+            String roles,
+            String palabrasClaveFaccion,
+            String palabrasClave,
+            String perfiles,
+            String habilidades,
+            String armas,
+            List<Estadistica40k> estadisticas,
+            List<Habilidad40k> habilidadesDetalle,
+            List<GrupoMiniaturas40k> gruposMiniaturas,
+            List<OpcionComposicion40k> opcionesComposicion
+        ) {
+            this(nombre, puntos, roles, palabrasClaveFaccion, palabrasClave, perfiles, habilidades, armas, estadisticas, habilidadesDetalle, gruposMiniaturas, opcionesComposicion, ClasificacionUnidad.normal());
+        }
     }
 
     public record OpcionComposicion40k(

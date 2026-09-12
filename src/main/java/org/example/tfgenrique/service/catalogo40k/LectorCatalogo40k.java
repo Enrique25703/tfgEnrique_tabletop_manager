@@ -10,6 +10,7 @@ import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.PerfilArma4
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.PerfilUnidad40k;
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService.Unidad40k;
 import org.w3c.dom.Document;
+import org.example.tfgenrique.service.catalogos.ClasificacionUnidad;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -227,7 +228,7 @@ public class LectorCatalogo40k {
         String faccion = partesNombre.length == 2 ? partesNombre[0].trim() : "Otros";
         String nombreEjercito = partesNombre.length == 2 ? partesNombre[1].trim() : archivoCatalogo.nombre().trim();
 
-        Map<String, Element> elementosUnidad = new LinkedHashMap<>();
+        Map<String, UnidadCatalogoResuelta> elementosUnidad = new LinkedHashMap<>();
         agregarUnidadesDeCatalogo(
                 archivoCatalogo,
                 unidadesRaizPorId,
@@ -237,7 +238,8 @@ public class LectorCatalogo40k {
         );
 
         List<Unidad40k> unidades = elementosUnidad.values().stream()
-                .map(unidad -> leerUnidad(unidad, selectionEntriesPorId, selectionEntryGroupsPorId, perfilesPorId))
+                .map(unidad -> leerUnidad(unidad.entrada(), unidad.enlace(), archivoCatalogo.nombre(),
+                        selectionEntriesPorId, selectionEntryGroupsPorId, perfilesPorId))
                 .sorted(Comparator.comparing(Unidad40k::nombre, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
@@ -248,7 +250,7 @@ public class LectorCatalogo40k {
             ArchivoCatalogo archivoCatalogo,
             Map<String, Element> unidadesRaizPorId,
             Map<String, ArchivoCatalogo> archivosCatalogoPorId,
-            Map<String, Element> elementosUnidad,
+            Map<String, UnidadCatalogoResuelta> elementosUnidad,
             Set<String> idsCatalogoVisitados
     ) {
         if (!idsCatalogoVisitados.add(archivoCatalogo.id())) {
@@ -257,14 +259,14 @@ public class LectorCatalogo40k {
 
         for (Element unidadRaiz : archivoCatalogo.unidadesRaiz()) {
             if (esUnidadVisible(unidadRaiz)) {
-                elementosUnidad.put(unidadRaiz.getAttribute("id"), unidadRaiz);
+                elementosUnidad.putIfAbsent(unidadRaiz.getAttribute("id"), new UnidadCatalogoResuelta(unidadRaiz, null));
             }
         }
 
         for (Element enlaceUnidad : archivoCatalogo.enlacesRaiz()) {
             Element unidadDestino = unidadesRaizPorId.get(enlaceUnidad.getAttribute("targetId"));
             if (unidadDestino != null && esUnidadVisible(unidadDestino)) {
-                elementosUnidad.put(unidadDestino.getAttribute("id"), unidadDestino);
+                elementosUnidad.putIfAbsent(unidadDestino.getAttribute("id"), new UnidadCatalogoResuelta(unidadDestino, enlaceUnidad));
             }
         }
 
@@ -337,8 +339,12 @@ public class LectorCatalogo40k {
                 .toList();
     }
 
+    private record UnidadCatalogoResuelta(Element entrada, Element enlace) { }
+
     private Unidad40k leerUnidad(
             Element entradaUnidad,
+            Element enlaceCatalogo,
+            String catalogoSeleccionado,
             Map<String, Element> selectionEntriesPorId,
             Map<String, Element> selectionEntryGroupsPorId,
             Map<String, Element> perfilesPorId
@@ -426,7 +432,8 @@ public class LectorCatalogo40k {
                 perfilesDetalle,
                 armasDetalle,
                 gruposMiniaturas,
-                opcionesComposicion
+                opcionesComposicion,
+                ClasificacionUnidad.leer(entradaUnidad, enlaceCatalogo, catalogoSeleccionado)
         );
     }
 

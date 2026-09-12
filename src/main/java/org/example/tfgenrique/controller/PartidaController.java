@@ -23,7 +23,7 @@ public class PartidaController {
         this.partidaService = partidaService;
     }
 
-    @GetMapping("/partidas")
+    @GetMapping("/partidas/nueva")
     public String nuevaPartida(HttpSession session, Model model) {
         Long usuarioId = obtenerUsuarioId(session);
         if (usuarioId == null) {
@@ -51,7 +51,7 @@ public class PartidaController {
             return "redirect:/partidas/" + partidaId + "/jugadores";
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
-            return "redirect:/partidas";
+            return "redirect:/partidas/nueva";
         }
     }
 

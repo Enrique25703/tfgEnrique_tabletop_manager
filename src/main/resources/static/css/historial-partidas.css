@@ -1,0 +1,41 @@
+.history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.history-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.history-filters label {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 165px;
+}
+
+.history-filters input { color-scheme: dark; }
+.history-help { color: var(--muted); font-size: 0.9rem; }
+.history-count { margin-top: 24px; font-weight: 600; }
+.history-table-scroll { overflow-x: auto; }
+.history-table { min-width: 820px; }
+.history-table caption { text-align: left; caption-side: bottom; padding: 14px 0; }
+.history-table td { overflow-wrap: anywhere; }
+.history-score { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.history-date { white-space: nowrap; }
+.history-result { display: inline-block; padding: 6px 10px; border-radius: 8px; background: var(--panel-muted); }
+.history-result-VICTORIA { color: #a3d79d; }
+.history-result-DERROTA, .history-delete { color: var(--danger); }
+.history-result-EMPATE { color: #e4c17e; }
+.history-delete:hover { border-color: var(--danger); }
+
+@media (max-width: 600px) {
+  .history-heading > a { width: 100%; text-align: center; }
+  .history-filters label { flex-basis: 100%; }
+}

@@ -377,7 +377,7 @@
                 <h3 class="card-title">EMPEZAR<br />PARTIDA</h3>
                 <p class="card-copy">Crea una partida de 40k, configura jugadores, layout, rondas y guarda el resultado final.</p>
                 <div class="card-actions">
-                  <a class="button-primary" href="/partidas">Empezar partida</a>
+                  <a class="button-primary" href="/partidas/nueva">Empezar partida</a>
                 </div>
               </article>
 

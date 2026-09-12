@@ -26,10 +26,12 @@
         color: var(--muted);
         font-size: 0.92rem;
       }
+      #estiloJuegoBloque[hidden], #notaAos[hidden] { display: none; }
     </style>
+    <link rel="stylesheet" href="/css/partida-creacion.css" />
   </head>
-  <body>
-    <c:set var="sidebarActive" value="partidas" />
+  <body class="setup-page setup-new">
+    <c:set var="sidebarActive" value="partidas" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="true" />
     <div class="app-shell">
       <jsp:include page="/WEB-INF/jsp/header.jsp" />
@@ -47,7 +49,7 @@
           <section class="page-panel">
             <div class="page-header">
               <h2 class="page-title">Crear partida</h2>
-              <p class="page-subtitle">Por ahora solo esta disponible Warhammer 40k.</p>
+              <p class="page-subtitle">Elige Warhammer 40k o Age of Sigmar para empezar.</p>
             </div>
 
             <c:if test="${not empty mensajeError}">
@@ -58,24 +60,25 @@
               <div class="form-grid">
                 <label>
                   Juego
-                  <select name="sistemaJuego" required>
+                  <select name="sistemaJuego" id="sistemaJuego" required>
                     <option value="WH40K_11">Warhammer 40.000 11a edicion</option>
+                    <option value="AOS_4">Age of Sigmar 4a edicion</option>
                   </select>
                 </label>
 
-                <label>
+                <label id="estiloJuegoBloque">
                   Estilo de juego
-                  <select name="estiloJuego" required>
+                  <select name="estiloJuego" id="estiloJuego" required>
                     <option value="EQUILIBRADO">Juego equilibrado</option>
                     <option value="ASIMETRICO">Juego asimetrico</option>
                   </select>
                 </label>
 
-                <p class="disabled-note">Age of Sigmar se anadira mas adelante, pero no se puede elegir todavia.</p>
+                <p class="disabled-note" id="notaAos" hidden>Age of Sigmar permite elegir entre cinco despliegues.</p>
 
                 <div class="form-actions">
                   <button class="button-primary" type="submit">Crear partida</button>
-                  <a class="button-secondary" href="/menu-principal">Volver</a>
+                  <a class="button-secondary" href="/partidas">Volver al historial</a>
                 </div>
               </div>
             </form>
@@ -83,5 +86,20 @@
         </main>
       </div>
     </div>
+    <script>
+      (function () {
+        const juego = document.getElementById('sistemaJuego');
+        const estilo = document.getElementById('estiloJuego');
+        function actualizarJuego() {
+          const aos = juego.value === 'AOS_4';
+          document.getElementById('estiloJuegoBloque').hidden = aos;
+          document.getElementById('notaAos').hidden = !aos;
+          estilo.disabled = aos;
+          if (aos) estilo.value = 'EQUILIBRADO';
+        }
+        juego.addEventListener('change', actualizarJuego);
+        actualizarJuego();
+      })();
+    </script>
   </body>
 </html>

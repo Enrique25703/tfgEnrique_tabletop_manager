@@ -68,6 +68,11 @@ public class LoginService {
 
         String nombreNormalizado = nombreUsuario.trim();
         String emailNormalizado = email.trim().toLowerCase();
+        String passwordNormalizado = password.trim();
+
+        if (passwordNormalizado.length() < 6) {
+            throw new IllegalArgumentException("La contrasena debe tener al menos 6 caracteres.");
+        }
 
         if (usuarioRepository.findByNombreUsuario(nombreNormalizado).isPresent()) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre.");
@@ -81,7 +86,7 @@ public class LoginService {
         Usuario usuario = new Usuario();
         usuario.setNombreUsuario(nombreNormalizado);
         usuario.setEmail(emailNormalizado);
-        usuario.setContrasenaHash(hashearContrasena(password));
+        usuario.setContrasenaHash(hashearContrasena(passwordNormalizado));
         usuario.setRol("USER");
         usuario.setActivo(true);
         usuario.setCreadoEn(ahora);

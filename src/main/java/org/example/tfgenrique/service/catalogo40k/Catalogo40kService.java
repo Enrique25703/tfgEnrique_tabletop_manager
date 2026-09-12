@@ -1,8 +1,10 @@
 package org.example.tfgenrique.service.catalogo40k;
 
 import org.springframework.stereotype.Service;
+import org.example.tfgenrique.service.catalogos.ClasificacionUnidad;
 
 import java.io.InputStream;
+import java.net.http.HttpTimeoutException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +22,13 @@ public class Catalogo40kService {
         try (InputStream catalogoDescargado = descargadorCatalogo.descargarCatalogo()) {
             datos = lectorCatalogo.leerCatalogo(catalogoDescargado);
             return datos;
+        } catch (HttpTimeoutException ex) {
+            throw new IllegalStateException("Se agotó el tiempo de espera al descargar el catálogo de Warhammer 40k. Inténtalo de nuevo.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Se interrumpio la actualizacion del catálogo de Warhammer 40k", ex);
         } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo actualizar el catalogo de Warhammer 40k", ex);
+            throw new IllegalStateException("No se pudo actualizar el catálogo de Warhammer 40k", ex);
         }
     }
 
@@ -74,7 +81,7 @@ public class Catalogo40kService {
         if (ejercito != null) {
             List<UnidadCatalogoResumenView> unidades = new ArrayList<>();
             for (Unidad40k unidad : ejercito.unidades()) {
-                unidades.add(new UnidadCatalogoResumenView(valorSeguro(unidad.nombre())));
+                unidades.add(new UnidadCatalogoResumenView(valorSeguro(unidad.nombre()), unidad.clasificacion()));
             }
 
             detalle = new EjercitoCatalogoDetalleView(
@@ -115,7 +122,7 @@ public class Catalogo40kService {
         List<HabilidadUnidadView> habilidades = new ArrayList<>();
         for (Habilidad40k habilidad : unidad.habilidadesDetalle()) {
             String descripcion = valorSeguroONulo(habilidad.descripcion()).isBlank()
-                    ? "Sin descripcion"
+                    ? "Sin descripción"
                     : habilidad.descripcion().trim();
             habilidades.add(new HabilidadUnidadView(valorSeguro(habilidad.nombre()), descripcion));
         }
@@ -321,7 +328,7 @@ public class Catalogo40kService {
     ) {
     }
 
-    public record UnidadCatalogoResumenView(String nombre) {
+    public record UnidadCatalogoResumenView(String nombre, ClasificacionUnidad clasificacion) {
     }
 
     public record InfoUnidad40kView(
@@ -363,8 +370,27 @@ public class Catalogo40kService {
             List<PerfilUnidad40k> perfilesDetalle,
             List<PerfilArma40k> armasDetalle,
             List<GrupoMiniaturas40k> gruposMiniaturas,
-            List<OpcionComposicion40k> opcionesComposicion
+            List<OpcionComposicion40k> opcionesComposicion,
+            ClasificacionUnidad clasificacion
     ) {
+        public Unidad40k(
+            String nombre,
+            String puntos,
+            String roles,
+            String palabrasClaveFaccion,
+            String palabrasClave,
+            String perfiles,
+            String habilidades,
+            String armas,
+            List<Estadistica40k> estadisticas,
+            List<Habilidad40k> habilidadesDetalle,
+            List<PerfilUnidad40k> perfilesDetalle,
+            List<PerfilArma40k> armasDetalle,
+            List<GrupoMiniaturas40k> gruposMiniaturas,
+            List<OpcionComposicion40k> opcionesComposicion
+        ) {
+            this(nombre, puntos, roles, palabrasClaveFaccion, palabrasClave, perfiles, habilidades, armas, estadisticas, habilidadesDetalle, perfilesDetalle, armasDetalle, gruposMiniaturas, opcionesComposicion, ClasificacionUnidad.normal());
+        }
     }
 
     public record PerfilUnidad40k(

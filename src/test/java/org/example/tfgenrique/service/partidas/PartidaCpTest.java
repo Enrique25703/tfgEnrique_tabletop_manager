@@ -23,7 +23,8 @@ class PartidaCpTest {
     private final RondaPartidaRepository rondas = mock(RondaPartidaRepository.class);
     private final PartidaService servicio = new PartidaService(usuarios, mock(SistemaJuegoRepository.class),
             partidas, rondas, mock(Deployment40kService.class), mock(Misiones40kService.class),
-            mock(Catalogo40kService.class), mock(CreacionListasService.class));
+            mock(Catalogo40kService.class), mock(CreacionListasService.class),
+            mock(DeploymentAosService.class), mock(org.example.tfgenrique.service.catalogoAos.CatalogoAosService.class));
     private final Partida partida = new Partida();
 
     @BeforeEach

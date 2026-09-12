@@ -11,12 +11,12 @@
       .stats-screen .page-panel {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: auto;
       }
 
       .stats-layout {
         display: grid;
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
         gap: 12px;
       }
@@ -24,7 +24,7 @@
       .stats-grid {
         display: grid;
         min-height: 0;
-        grid-template-columns: 1.2fr 0.9fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 12px;
         align-items: stretch;
       }
@@ -69,44 +69,19 @@
         background: rgba(14, 22, 34, 0.55);
       }
 
-      .timeline-meta {
-        display: flex;
-        justify-content: space-between;
+      .results-pie {
+        width: min(220px, 100%);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        margin: 0 auto;
+      }
+
+      .results-legend {
+        display: grid;
         gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-        color: var(--muted);
-        font-size: 0.84rem;
-      }
-
-      .timeline-svg {
-        width: 100%;
-        height: auto;
-        display: block;
-      }
-
-      .axis-text {
-        fill: #90a6c4;
-        font-size: 4px;
-      }
-
-      .grid-line {
-        stroke: rgba(144, 166, 196, 0.22);
-        stroke-width: 0.35;
-      }
-
-      .timeline-line {
-        fill: none;
-        stroke: #5b8def;
-        stroke-width: 1.2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .timeline-point {
-        fill: #dce8ff;
-        stroke: #5b8def;
-        stroke-width: 0.65;
+        margin: 16px 0 0;
+        padding: 0;
+        list-style: none;
       }
 
       .distribution-shell {
@@ -251,55 +226,44 @@
             <div class="stats-layout">
               <div class="summary-grid">
                 <article class="summary-card">
-                  <p class="summary-value"><c:out value="${estadisticas.evolucionVictorias.porcentajeVictorias}" /></p>
+                  <p class="summary-value"><c:out value="${estadisticas.resultados.porcentajeVictorias}" /></p>
                   <p class="summary-label">Porcentaje de victorias</p>
                 </article>
                 <article class="summary-card">
-                  <p class="summary-value"><c:out value="${estadisticas.evolucionVictorias.victorias}" /></p>
+                  <p class="summary-value"><c:out value="${estadisticas.resultados.victorias}" /></p>
                   <p class="summary-label">Victorias</p>
                 </article>
                 <article class="summary-card">
-                  <p class="summary-value"><c:out value="${estadisticas.evolucionVictorias.derrotas}" /></p>
+                  <p class="summary-value"><c:out value="${estadisticas.resultados.derrotas}" /></p>
                   <p class="summary-label">Derrotas</p>
                 </article>
                 <article class="summary-card">
-                  <p class="summary-value"><c:out value="${estadisticas.evolucionVictorias.empates}" /></p>
+                  <p class="summary-value"><c:out value="${estadisticas.resultados.empates}" /></p>
                   <p class="summary-label">Empates</p>
                 </article>
               </div>
 
               <div class="stats-grid">
                 <article class="stats-card">
-                  <h3>Evolucion de victorias</h3>
-                  <p class="page-subtitle">Porcentaje acumulado de victorias desde la creacion de la cuenta hasta la ultima partida finalizada.</p>
-
+                  <h3>Resultados de partidas</h3>
                   <div class="chart-shell">
                     <c:choose>
-                      <c:when test="${estadisticas.evolucionVictorias.tieneDatos}">
-                        <svg class="timeline-svg" viewBox="0 0 100 100" aria-label="Grafica de evolucion de victorias">
-                          <line class="grid-line" x1="0" y1="100" x2="100" y2="100"></line>
-                          <line class="grid-line" x1="0" y1="50" x2="100" y2="50"></line>
-                          <line class="grid-line" x1="0" y1="0" x2="100" y2="0"></line>
-                          <text class="axis-text" x="0" y="97">0%</text>
-                          <text class="axis-text" x="0" y="47">50%</text>
-                          <text class="axis-text" x="0" y="6">100%</text>
-                          <polyline class="timeline-line" points="${estadisticas.evolucionVictorias.polylinePoints}"></polyline>
-                          <c:forEach var="punto" items="${estadisticas.evolucionVictorias.puntos}">
-                            <circle class="timeline-point" cx="${punto.x}" cy="${punto.y}" r="1.5">
-                              <title><c:out value="${punto.fecha}" /> - <c:out value="${punto.porcentaje}" /> (<c:out value="${punto.victorias}" />/<c:out value="${punto.partidas}" />)</title>
-                            </circle>
-                          </c:forEach>
-                        </svg>
-                        <div class="timeline-meta">
-                          <span>Inicio: <c:out value="${estadisticas.evolucionVictorias.fechaInicio}" /></span>
-                          <span>Ultima partida: <c:out value="${estadisticas.evolucionVictorias.fechaFin}" /></span>
-                          <span>Partidas finalizadas: <c:out value="${estadisticas.evolucionVictorias.partidasFinalizadas}" /></span>
-                        </div>
+                      <c:when test="${estadisticas.resultados.tieneDatos}">
+                        <div class="results-pie" style="background: ${estadisticas.resultados.graficaCss};" role="img" aria-label="Porcentaje de victorias, empates y derrotas" aria-describedby="leyendaResultados"></div>
                       </c:when>
                       <c:otherwise>
-                        <div class="empty-box">Todavia no hay partidas finalizadas para construir la evolucion de victorias.</div>
+                        <div class="empty-box">Todavía no hay partidas finalizadas.</div>
                       </c:otherwise>
                     </c:choose>
+                    <ul class="results-legend" id="leyendaResultados">
+                      <c:forEach var="resultado" items="${estadisticas.resultados.segmentos}">
+                        <li class="legend-item">
+                          <span class="legend-color" style="background: ${resultado.color};" aria-hidden="true"></span>
+                          <span class="legend-label"><c:out value="${resultado.etiqueta}" /></span>
+                          <strong><c:out value="${resultado.porcentaje}" /></strong>
+                        </li>
+                      </c:forEach>
+                    </ul>
                   </div>
                 </article>
 

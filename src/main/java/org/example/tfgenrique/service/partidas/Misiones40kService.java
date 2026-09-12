@@ -19,7 +19,11 @@ import java.util.Locale;
 public class Misiones40kService {
 
     public MisionView obtenerPrimeraMisionPrincipal() {
-        List<MisionView> misiones = leerMisiones("/catalogos/misiones-principales-40k.cat", "misionesPrimarias");
+        return obtenerPrimeraMisionPrincipal("WH40K_11");
+    }
+
+    public MisionView obtenerPrimeraMisionPrincipal(String sistemaJuego) {
+        List<MisionView> misiones = leerMisiones(rutaMisiones("principales", sistemaJuego), "misionesPrimarias");
         if (misiones.isEmpty()) {
             return new MisionView("sin-mision", "Sin mision", "", "", List.of());
         }
@@ -27,7 +31,20 @@ public class Misiones40kService {
     }
 
     public List<MisionView> obtenerMisionesSecundarias() {
-        return leerMisiones("/catalogos/misiones-secundarias-40k.cat", "misionesSecundarias");
+        return obtenerMisionesSecundarias("WH40K_11");
+    }
+
+    public List<MisionView> obtenerMisionesSecundarias(String sistemaJuego) {
+        return leerMisiones(rutaMisiones("secundarias", sistemaJuego), "misionesSecundarias");
+    }
+
+    private String rutaMisiones(String tipo, String sistemaJuego) {
+        String sufijo = switch (sistemaJuego) {
+            case "AOS_4" -> "AoS";
+            case "WH40K_11" -> "40k";
+            default -> throw new IllegalArgumentException("Sistema de juego no compatible.");
+        };
+        return "/catalogos/misiones-" + tipo + "-" + sufijo + ".cat";
     }
 
     public List<CombinacionMisionView> obtenerCombinacionesPorDefecto() {

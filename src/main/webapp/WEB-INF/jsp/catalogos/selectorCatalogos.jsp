@@ -5,8 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Seleccionar catalogo</title>
+    <title>Seleccionar catálogo</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
+    <link rel="stylesheet" href="/css/catalogos.css" />
     <style>
       .selector-grid {
         display: grid;
@@ -33,8 +34,8 @@
       }
     </style>
   </head>
-  <body>
-    <c:set var="sidebarActive" value="catalogos" />
+  <body class="catalog-screen">
+    <c:set var="sidebarActive" value="catalogos" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
       <jsp:include page="/WEB-INF/jsp/header.jsp" />
@@ -52,18 +53,18 @@
           <section class="page-panel">
             <div class="page-header">
               <h2 class="page-title">Seleccionar juego</h2>
-              <p class="page-subtitle">Â¿QuÃ© vamos a jugar hoy comandante?.</p>
+              <p class="page-subtitle">¿Qué vamos a jugar hoy, comandante?</p>
             </div>
 
             <div class="selector-grid">
               <article class="selector-card">
                 <h3>Warhammer 40.000</h3>
-                <a class="button-primary" href="/catalogo40k">Ir al catÃ¡logo de 40k</a>
+                <a class="button-primary" href="/catalogo40k">Ir al catálogo de 40k</a>
               </article>
 
               <article class="selector-card">
                 <h3>Age of Sigmar</h3>
-                <a class="button-primary" href="/catalogo-aos">Ir al catÃ¡logo de AoS</a>
+                <a class="button-primary" href="/catalogo-aos">Ir al catálogo de AoS</a>
               </article>
             </div>
           </section>

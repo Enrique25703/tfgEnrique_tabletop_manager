@@ -56,9 +56,11 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="/css/partida-creacion.css" />
+    <script src="/js/partida-creacion.js" defer></script>
   </head>
-  <body>
-    <c:set var="sidebarActive" value="partidas" />
+  <body class="setup-page setup-players">
+    <c:set var="sidebarActive" value="partidas" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="true" />
     <c:set var="partida" value="${jugadores.partida}" />
     <div class="app-shell">
@@ -74,7 +76,7 @@
 
             <div class="steps">
               <span class="step active">1 Jugadores</span>
-              <span class="step">2 Layout</span>
+              <span class="step">2 Configuración</span>
               <span class="step">3 Rondas</span>
               <span class="step">4 Final</span>
             </div>
@@ -94,8 +96,12 @@
                 </c:forEach>
               </select>
 
+              <div class="setup-player-switch" aria-label="Jugador que estás configurando">
+                <button type="button" data-setup-show="1" aria-controls="setup-player-1" aria-pressed="true">Tu jugador</button>
+                <button type="button" data-setup-show="2" aria-controls="setup-player-2" aria-pressed="false">Rival</button>
+              </div>
               <div class="players-grid">
-                <article class="player-card">
+                <article class="player-card is-current" id="setup-player-1" data-setup-player="1">
                   <h3>Tu jugador</h3>
                   <div class="form-grid">
                     <label>
@@ -141,12 +147,12 @@
                     </label>
                     <label id="bloqueJugador1Custom">
                       Lista CUSTOM
-                      <textarea name="jugador1ListaCustom" rows="6"><c:out value="${partida.jugador1NombreListaSnapshot}" /></textarea>
+                      <textarea name="jugador1ListaCustom" rows="3"><c:out value="${partida.jugador1NombreListaSnapshot}" /></textarea>
                     </label>
                   </div>
                 </article>
 
-                <article class="player-card">
+                <article class="player-card" id="setup-player-2" data-setup-player="2">
                   <h3>Rival</h3>
                   <div class="form-grid">
                     <label>
@@ -170,14 +176,14 @@
                     </label>
                     <label>
                       Lista del rival
-                      <textarea name="jugador2ListaCustom" rows="6"><c:out value="${partida.jugador2NombreListaSnapshot}" /></textarea>
+                      <textarea name="jugador2ListaCustom" rows="3"><c:out value="${partida.jugador2NombreListaSnapshot}" /></textarea>
                     </label>
                   </div>
                 </article>
               </div>
 
               <div class="form-actions">
-                <a class="button-secondary" href="/partidas">Atras</a>
+                <a class="button-secondary" href="/partidas/nueva">Atras</a>
                 <button class="button-primary" type="submit">Confirmar jugadores</button>
               </div>
             </form>

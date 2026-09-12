@@ -13,6 +13,7 @@ import org.example.tfgenrique.dao.*;
 import org.example.tfgenrique.entity.Usuario;
 import org.example.tfgenrique.service.CreacionListasService;
 import org.example.tfgenrique.service.catalogo40k.Catalogo40kService;
+import org.example.tfgenrique.service.catalogoAos.CatalogoAosService;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -43,7 +44,7 @@ class PartidaAperturaTest {
             var sesion = new MockHttpSession();
             sesion.setAttribute("usuarioId", usuario.getId());
 
-            mvc.perform(get("/partidas").session(sesion))
+            mvc.perform(get("/partidas/nueva").session(sesion))
                     .andExpect(status().isOk()).andExpect(view().name("partidas/partidaNueva"));
             var creado = mvc.perform(post("/partidas/crear").session(sesion)
                             .param("sistemaJuego", "WH40K_11").param("estiloJuego", "EQUILIBRADO"))
@@ -70,7 +71,7 @@ class PartidaAperturaTest {
                     .andExpect(redirectedUrl(base + "/configuracion"));
             mvc.perform(get(base + "/configuracion").session(sesion))
                     .andExpect(status().isOk()).andExpect(view().name("partidas/partidaConfiguracion"));
-            mvc.perform(get("/partidas"))
+            mvc.perform(get("/partidas/nueva"))
                     .andExpect(redirectedUrl("/"));
         }
     }
@@ -99,6 +100,100 @@ class PartidaAperturaTest {
         usuario.setCreadoEn(LocalDateTime.now());
         usuario.setActualizadoEn(LocalDateTime.now());
         return repositorio.saveAndFlush(usuario);
+    }
+
+    @Test
+    void completaPartidaAosConCincoDesplieguesMisionesPropiasYResultado() throws Exception {
+        try (var contexto = new AnnotationConfigApplicationContext(Config.class)) {
+            Usuario usuario = crearUsuario(contexto.getBean(UsuarioRepository.class), "jugadorAos");
+            var servicio = contexto.getBean(PartidaService.class);
+            var mvc = MockMvcBuilders.standaloneSetup(new PartidaController(servicio)).build();
+            var sesion = new MockHttpSession();
+            sesion.setAttribute("usuarioId", usuario.getId());
+            var creado = mvc.perform(post("/partidas/crear").session(sesion)
+                            .param("sistemaJuego", "AOS_4").param("estiloJuego", "ASIMETRICO"))
+                    .andExpect(status().is3xxRedirection()).andReturn();
+            String destino = creado.getResponse().getRedirectedUrl();
+            Long id = Long.valueOf(destino.split("/")[2]);
+            var jugadores = servicio.prepararJugadores(usuario.getId(), id);
+            assertEquals("AOS_4", jugadores.partida().getSistemaJuego().getCodigo());
+            assertEquals("Age of Sigmar", jugadores.partida().getSistemaJuego().getNombre());
+            assertEquals("EQUILIBRADO", jugadores.partida().getEstiloJuego());
+            assertEquals("Order", jugadores.facciones().get(0).nombre());
+            verifyNoInteractions(contexto.getBean(Catalogo40kService.class));
+
+            mvc.perform(post(destino).session(sesion)
+                            .param("jugador1Nombre", "jugadorAos").param("jugador1Faccion", "Order")
+                            .param("jugador1Ejercito", "Stormcast Eternals").param("jugador1ListaTipo", "NONE")
+                            .param("jugador2Nombre", "Rival AoS").param("jugador2Faccion", "Order")
+                            .param("jugador2Ejercito", "Stormcast Eternals"))
+                    .andExpect(redirectedUrl("/partidas/" + id + "/configuracion"));
+            var configuracion = servicio.prepararConfiguracion(usuario.getId(), id);
+            assertEquals(5, configuracion.desplieguesSimetricos().size());
+            assertTrue(configuracion.layouts().isEmpty());
+            assertTrue(configuracion.desplieguesMixtos().isEmpty());
+            assertTrue(configuracion.opcionesMision().isEmpty());
+            for (var despliegue : configuracion.desplieguesSimetricos()) {
+                mvc.perform(post("/partidas/{id}/configuracion", id).session(sesion)
+                                .param("despliegue", despliegue.codigo())
+                                .param("jugadorDefensor", "USUARIO").param("jugadorPrimero", "RIVAL")
+                                .param("layout", "layouts/CA_TerrainLayout1.png")
+                                .param("tipoMision", "MISION A").param("usarCartasGiro", "on"))
+                        .andExpect(redirectedUrl("/partidas/" + id + "/ronda/1"));
+            }
+            var ronda = servicio.prepararRonda(usuario.getId(), id, 1);
+            assertEquals("Despliegue E", ronda.resumenConfiguracion().despliegue());
+            assertNull(ronda.partida().getLayoutMision());
+            assertFalse(ronda.partida().getUsarCartasGiro());
+            assertEquals("jugador2", ronda.izquierda().prefijo());
+            assertEquals("secundaria-destruir-unidad", ronda.misionesSecundarias().get(0).id());
+            assertFalse(ronda.misionesSecundarias().get(0).condiciones().isEmpty());
+            assertFalse(ronda.misionPrincipal().descripcion().isBlank());
+            for (int numero = 1; numero <= 5; numero++) {
+                servicio.guardarRonda(usuario.getId(), id, numero, Map.of(
+                        "jugador1Primaria", "10", "jugador1Secundaria", "5", "jugador2Primaria", "5",
+                        "jugador1Detalle", "[{\"id\":\"secundaria-destruir-unidad\",\"puntos\":5,\"cumplida\":true}]"));
+            }
+            servicio.finalizarPartida(usuario.getId(), id);
+            var resultado = servicio.prepararFinal(usuario.getId(), id);
+            assertEquals("FINALIZADA", resultado.partida().getEstado());
+            assertEquals(75, resultado.partida().getJugador1PuntuacionTotal());
+            assertEquals(25, resultado.partida().getJugador2PuntuacionTotal());
+            assertEquals(5, resultado.rondas().size());
+            assertTrue(servicio.prepararRonda(usuario.getId(), id, 3).derecha().detalle().contains("secundaria-destruir-unidad"));
+
+            for (String despliegue : List.of("", "Despliegue F.png", "despliegues_simetricos/CA6_SF_DawnOfWar.png")) {
+                mvc.perform(post("/partidas/{id}/configuracion", id).session(sesion)
+                                .param("despliegue", despliegue).param("jugadorDefensor", "USUARIO")
+                                .param("jugadorPrimero", "USUARIO"))
+                        .andExpect(redirectedUrl("/partidas/" + id + "/configuracion"))
+                        .andExpect(flash().attributeExists("mensajeError"));
+            }
+        }
+    }
+
+    @Test
+    void separaListasPorSistemaYRechazaListasDelOtroJuego() {
+        try (var contexto = new AnnotationConfigApplicationContext(Config.class)) {
+            var usuario = crearUsuario(contexto.getBean(UsuarioRepository.class), "listas");
+            var servicio = contexto.getBean(PartidaService.class);
+            var listas = contexto.getBean(CreacionListasService.class);
+            var lista40k = new CreacionListasService.ListaGuardadaView(1L, "Lista 40k", "WH40K_11", "Imperium", "Prueba", 1000, 2000, 1, List.of());
+            var listaAos = new CreacionListasService.ListaGuardadaView(2L, "Lista AoS", "AOS_4", "Order", "Stormcast Eternals", 1000, 2000, 1, List.of());
+            when(listas.obtenerListasGuardadas("listas")).thenReturn(List.of(lista40k, listaAos));
+            when(listas.obtenerListaGuardadaPorId("listas", 1L)).thenReturn(lista40k);
+            when(listas.obtenerListaGuardadaPorId("listas", 2L)).thenReturn(listaAos);
+            for (String formato : List.of("WH40K_11", "AOS_4")) {
+                Long id = servicio.crearPartida(usuario.getId(), formato, "EQUILIBRADO");
+                boolean aos = formato.equals("AOS_4");
+                var disponibles = servicio.prepararJugadores(usuario.getId(), id).listasUsuario();
+                assertEquals(1, disponibles.size());
+                assertEquals(aos ? 2L : 1L, disponibles.get(0).listaId());
+                assertThrows(IllegalArgumentException.class, () -> servicio.guardarJugadores(usuario.getId(), id,
+                        new PartidaService.JugadoresRequest("Yo", "Order", "Stormcast Eternals", aos ? "1" : "2", "",
+                                "Rival", "Order", "Stormcast Eternals", "")));
+            }
+        }
     }
 
     @Configuration(proxyBeanMethods = false)
@@ -142,11 +237,21 @@ class PartidaAperturaTest {
         }
 
         @Bean
+        CatalogoAosService catalogoAos() {
+            var catalogo = mock(CatalogoAosService.class);
+            when(catalogo.getData()).thenReturn(new CatalogoAosService.Catalogo40kData(
+                    Map.of("Order", Map.of("Stormcast Eternals", new CatalogoAosService.Ejercito40k(
+                            "Order", "Stormcast Eternals", List.of()))), LocalDateTime.now()));
+            return catalogo;
+        }
+
+        @Bean
         PartidaService partidas(UsuarioRepository usuarios, SistemaJuegoRepository sistemas,
                 PartidaRepository partidas, RondaPartidaRepository rondas,
-                Catalogo40kService catalogo, CreacionListasService listas) {
+                Catalogo40kService catalogo, CreacionListasService listas, CatalogoAosService catalogoAos) {
             return new PartidaService(usuarios, sistemas, partidas, rondas,
-                    new Deployment40kService(), new Misiones40kService(), catalogo, listas);
+                    new Deployment40kService(), new Misiones40kService(), catalogo, listas,
+                    new DeploymentAosService(), catalogoAos);
         }
     }
 }

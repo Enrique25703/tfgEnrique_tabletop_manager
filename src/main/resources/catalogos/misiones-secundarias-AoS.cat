@@ -1,0 +1,88 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogoMisiones juego="AOS_4E" nombre="Misiones Secundarias Age of Sigmar">
+    <misionesSecundarias>
+
+        <mision id="secundaria-destruir-unidad">
+            <titulo>Destruir una unidad enemiga</titulo>
+            <puntuacion>5 VP si destruyes una unidad enemiga durante la ronda.</puntuacion>
+            <descripcion>Esta mision premia debilitar las fuerzas enemigas mediante la destruccion de sus unidades.</descripcion>
+            <condiciones>
+                <condicion>La unidad enemiga debe quedar destruida durante la ronda actual.</condicion>
+                <condicion>Solo se puede puntuar una vez por ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-dominar-centro">
+            <titulo>Dominar el centro</titulo>
+            <puntuacion>5 VP si controlas el objetivo central al final de la ronda.</puntuacion>
+            <descripcion>El ejercito debe mantener el control sobre el centro del campo de batalla.</descripcion>
+            <condiciones>
+                <condicion>Debes controlar el objetivo central al final de la ronda.</condicion>
+                <condicion>Debes tener al menos una unidad elegible para controlar objetivos en esa posicion.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-invadir-territorio">
+            <titulo>Invadir territorio enemigo</titulo>
+            <puntuacion>5 VP si tienes una unidad en el territorio enemigo.</puntuacion>
+            <descripcion>El jugador puntua por atravesar las lineas rivales y penetrar en sus dominios.</descripcion>
+            <condiciones>
+                <condicion>La unidad debe estar completamente dentro del territorio enemigo.</condicion>
+                <condicion>La unidad debe permanecer en el campo de batalla al final de la ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-asegurar-flanco">
+            <titulo>Asegurar un flanco</titulo>
+            <puntuacion>4 VP si controlas un objetivo situado en uno de los flancos al final de la ronda.</puntuacion>
+            <descripcion>El ejercito debe extender su dominio hacia una de las zonas laterales del campo de batalla.</descripcion>
+            <condiciones>
+                <condicion>Debes controlar un objetivo que no este situado en el centro del campo de batalla.</condicion>
+                <condicion>El objetivo debe estar fuera de tu territorio inicial.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-ritual-de-batalla">
+            <titulo>Completar un ritual</titulo>
+            <puntuacion>5 VP si una unidad completa un ritual durante esta ronda.</puntuacion>
+            <descripcion>Una unidad dedica sus esfuerzos a canalizar energia magica, consagrar una posicion o completar un objetivo estrategico.</descripcion>
+            <condiciones>
+                <condicion>La unidad designada debe permanecer en la posicion requerida hasta el final de la ronda.</condicion>
+                <condicion>La unidad no puede haber realizado una retirada durante esta ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-cazar-heroe">
+            <titulo>Cazar al heroe</titulo>
+            <puntuacion>5 VP si destruyes una unidad Hero enemiga.</puntuacion>
+            <descripcion>El jugador puntua por eliminar lideres, campeones o personajes importantes del ejercito rival.</descripcion>
+            <condiciones>
+                <condicion>La unidad destruida debe tener la palabra clave Hero.</condicion>
+                <condicion>Solo se puede puntuar una vez por ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-defender-lugar-poder">
+            <titulo>Defender un lugar de poder</titulo>
+            <puntuacion>4 VP si conservas un objetivo que ya controlabas al inicio de la ronda.</puntuacion>
+            <descripcion>El jugador puntua por mantener bajo su dominio una posicion previamente conquistada.</descripcion>
+            <condiciones>
+                <condicion>Debias controlar el objetivo al inicio de la ronda.</condicion>
+                <condicion>Debes seguir controlandolo al final de la ronda.</condicion>
+            </condiciones>
+        </mision>
+
+        <mision id="secundaria-no-ceder-terreno">
+            <titulo>No ceder terreno</titulo>
+            <puntuacion>3 VP si ninguna de tus unidades realiza una retirada durante la ronda.</puntuacion>
+            <descripcion>El ejercito debe mantener la presion sobre el enemigo sin abandonar sus posiciones.</descripcion>
+            <condiciones>
+                <condicion>Ninguna de tus unidades puede haber realizado un movimiento de retirada durante esta ronda.</condicion>
+                <condicion>Debes tener al menos una unidad fuera de tu territorio inicial.</condicion>
+            </condiciones>
+        </mision>
+
+    </misionesSecundarias>
+</catalogoMisiones>
+```

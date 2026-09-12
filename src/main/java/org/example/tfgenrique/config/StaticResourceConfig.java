@@ -9,6 +9,8 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/deploymentsAoS/**")
+                .addResourceLocations("classpath:/deploymentsAoS/");
         registry.addResourceHandler("/deployments40k/**")
                 .addResourceLocations("classpath:/deployments40k/");
         registry.addResourceHandler("/profilepicks/**")

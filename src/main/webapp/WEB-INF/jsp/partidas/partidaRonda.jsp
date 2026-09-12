@@ -7,159 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ronda ${ronda.numeroRonda}</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
-    <style>
-      .round-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 18px;
-        flex-wrap: wrap;
-      }
-
-      .page-panel, .round-header > *, .round-board > *,
-      .player-panel > *, .mission-card > *, .secondary-card > * {
-        min-width: 0;
-        max-width: 100%;
-        overflow-wrap: anywhere;
-      }
-
-      .round-header > div:first-child { flex: 1 1 280px; }
-      .round-header .form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-      .round-header button { white-space: normal; }
-
-      .round-board {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr);
-        gap: 20px;
-        align-items: start;
-      }
-
-      .separator {
-        align-self: stretch;
-        border-radius: 999px;
-        background: var(--line-strong);
-      }
-
-      .player-panel,
-      .mission-card,
-      .secondary-card {
-        padding: 18px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: var(--panel-soft);
-      }
-
-      .player-panel {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        align-content: start;
-        gap: 14px;
-      }
-
-      .player-title {
-        margin: 0;
-        font-size: 1.5rem;
-      }
-
-      .tags {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .tag {
-        padding: 7px 10px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        color: var(--muted);
-      }
-
-      .score-row,
-      .cp-row {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .secondary-list {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .cp-counter { margin: 0; padding: 16px; border: 1px solid var(--line-strong); border-radius: 16px; }
-      .cp-counter legend { padding: 0 6px; font-weight: 600; }
-      .cp-balance { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-      .cp-balance output { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-      .cp-row label, .mission-card > label, .secondary-card > label { display: grid; gap: 6px; min-width: 0; }
-      .cp-row input { min-width: 0; text-align: center; }
-      .cp-counter .page-subtitle { margin: 10px 0 0; font-size: 0.85rem; }
-      .secondary-card { display: grid; gap: 10px; }
-      .secondary-card .completed-toggle { display: flex; align-items: center; gap: 8px; }
-      .player-panel input[type="checkbox"], .popup input[type="checkbox"] { width: 18px; height: 18px; padding: 0; flex: 0 0 auto; accent-color: var(--accent); }
-      .mission-card h4, .secondary-card p { margin: 0 0 10px; }
-
-      .popup {
-        width: min(94vw, 680px);
-        max-height: 88vh;
-        max-height: 88dvh;
-        overflow: hidden;
-        padding: 0;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: var(--panel-soft);
-        color: var(--text);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
-      }
-
-      .popup[open] { display: flex; flex-direction: column; }
-      .popup::backdrop { background: rgba(0, 0, 0, 0.65); }
-      .popup-header { padding: 18px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
-      .popup-header h3 { margin: 0 0 8px; }
-      #listaMisionesPopup { overflow-y: auto; min-height: 0; padding: 0 8px 12px; overscroll-behavior: contain; }
-
-      .mission-option {
-        display: grid;
-        gap: 6px;
-        padding: 12px;
-        border-bottom: 1px solid var(--line);
-        grid-template-columns: 20px minmax(0, 1fr);
-        column-gap: 10px;
-        cursor: pointer;
-        overflow-wrap: anywhere;
-      }
-      .mission-option > .mission-description, .mission-option > .mission-score { grid-column: 2; }
-      .mission-option:has(input:checked) { background: rgba(79, 127, 184, 0.15); }
-
-      .popup-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-      }
-
-      @media (max-width: 1000px) {
-        .round-board {
-          grid-template-columns: 1fr;
-        }
-
-        .separator {
-          height: 2px;
-        }
-      }
-      @media (max-width: 540px) {
-        .page-content { padding: 8px; }
-        .page-panel { padding: 12px; }
-        .player-panel, .mission-card, .secondary-card { padding: 12px; border-radius: 12px; }
-        .round-header .form-actions { width: 100%; }
-        .round-header .form-actions > * { flex: 1 1 160px; text-align: center; }
-      }
-    </style>
+    <link rel="stylesheet" href="/css/partida-ronda.css" />
   </head>
-  <body>
-    <c:set var="sidebarActive" value="partidas" />
+  <body class="round-page">
+    <c:set var="sidebarActive" value="partidas" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="true" />
     <div class="app-shell">
       <jsp:include page="/WEB-INF/jsp/header.jsp" />
@@ -174,7 +25,9 @@
               <div class="round-header">
                 <div>
                   <h2 class="page-title">Ronda ${ronda.numeroRonda} de 5</h2>
-                  <p class="page-subtitle">
+                  <button class="round-config-link" type="button" data-round-info="configuracionRonda" data-info-title="Configuración de la partida" aria-haspopup="dialog">Ver configuración</button>
+                  <template id="configuracionRonda">
+                  <p>
                     <c:out value="${ronda.resumenConfiguracion.estiloJuego}" />
                     &middot; Mision: <c:out value="${ronda.resumenConfiguracion.mision}" />
                     <c:if test="${not empty ronda.resumenConfiguracion.layout}">
@@ -184,6 +37,7 @@
                       &middot; Despliegue: <c:out value="${ronda.resumenConfiguracion.despliegue}" />
                     </c:if>
                   </p>
+                  </template>
                 </div>
                 <div class="form-actions">
                   <c:choose>
@@ -200,29 +54,32 @@
                 </div>
               </div>
 
+              <div class="player-switch" aria-label="Jugador visible">
+                <button type="button" data-show-player="${ronda.izquierda.prefijo}" aria-pressed="true" aria-controls="panel-${ronda.izquierda.prefijo}"><span><c:out value="${ronda.izquierda.nombre}" /></span><strong data-round-score="${ronda.izquierda.prefijo}">0 VP</strong></button>
+                <button type="button" data-show-player="${ronda.derecha.prefijo}" aria-pressed="false" aria-controls="panel-${ronda.derecha.prefijo}"><span><c:out value="${ronda.derecha.nombre}" /></span><strong data-round-score="${ronda.derecha.prefijo}">0 VP</strong></button>
+              </div>
               <div class="round-board">
-                <article class="player-panel" data-player-panel="${ronda.izquierda.prefijo}">
+                <article class="player-panel is-current" id="panel-${ronda.izquierda.prefijo}" data-player-panel="${ronda.izquierda.prefijo}">
+                  <div class="player-heading">
                   <h3 class="player-title"><c:out value="${ronda.izquierda.nombre}" /></h3>
+                  <span class="round-score"><strong data-round-score="${ronda.izquierda.prefijo}">0 VP</strong><small>esta ronda</small></span>
+                  </div>
                   <div class="tags">
                     <span class="tag"><c:out value="${ronda.izquierda.faccion}" /></span>
                     <c:if test="${ronda.izquierda.primero}"><span class="tag">Va primero</span></c:if>
                     <c:if test="${ronda.izquierda.defensor}"><span class="tag">Defensor</span></c:if>
                   </div>
 
-                  <c:if test="${not empty ronda.izquierda.lista}">
-                    <div class="mission-card"><strong>Lista:</strong> <c:out value="${ronda.izquierda.lista}" /></div>
-                  </c:if>
 
                   <c:choose>
                     <c:when test="${ronda.partida.mostrarCommandPoints}">
                       <fieldset class="cp-counter" data-cp-inicio="${ronda.izquierda.cpInicio}">
-                        <legend>Command Points (CP)</legend>
+                        <legend>CP · Inicio: ${ronda.izquierda.cpInicio}</legend>
                         <div class="cp-balance"><span>Disponibles</span><output class="cp-total" aria-live="polite">${ronda.izquierda.cpFin}</output></div>
                         <div class="cp-row">
                           <label>Gastados <input class="cp-spent" type="number" min="0" step="1" name="${ronda.izquierda.prefijo}CpGastados" value="${ronda.izquierda.cpGastados}" /></label>
                           <label>Ganados <input class="cp-earned" type="number" min="0" step="1" name="${ronda.izquierda.prefijo}CpGanados" value="${ronda.izquierda.cpGanados}" /></label>
                         </div>
-                        <p class="page-subtitle">En esta ronda &middot; Saldo inicial: ${ronda.izquierda.cpInicio} CP</p>
                       </fieldset>
                     </c:when>
                     <c:otherwise>
@@ -231,47 +88,44 @@
                     </c:otherwise>
                   </c:choose>
 
-                  <section class="mission-card">
-                    <h4>Mision principal: <c:out value="${ronda.misionPrincipal.titulo}" /></h4>
-                    <p><c:out value="${ronda.misionPrincipal.descripcion}" /></p>
-                    <p><strong>Puntuacion:</strong> <c:out value="${ronda.misionPrincipal.puntuacion}" /></p>
-                    <label>Puntos primaria <input class="score-input" type="number" min="0" name="${ronda.izquierda.prefijo}Primaria" value="${ronda.izquierda.primaria}" /></label>
+                  <section class="mission-card primary-card">
+                    <div><h4>Misión principal</h4><button type="button" class="round-config-link" data-round-info="misionPrincipalInfo" data-info-title="Misión principal" aria-haspopup="dialog"><c:out value="${ronda.misionPrincipal.titulo}" /></button></div>
+                    <label>VP <input class="score-input" type="number" min="0" step="1" aria-label="Puntos de misión principal" name="${ronda.izquierda.prefijo}Primaria" value="${ronda.izquierda.primaria}" /></label>
                   </section>
 
                   <section class="mission-card">
-                    <h4>Misiones secundarias</h4>
-                    <button class="button-secondary abrir-secundarias" type="button" data-prefijo="${ronda.izquierda.prefijo}">Elegir secundarias</button>
+                    <div class="secondary-heading"><h4>Secundarias <span class="secondary-count"></span></h4>
+                    <button class="button-secondary abrir-secundarias" type="button" data-prefijo="${ronda.izquierda.prefijo}">Elegir</button></div>
                     <input type="hidden" class="secondary-total" name="${ronda.izquierda.prefijo}Secundaria" value="${ronda.izquierda.secundaria}" />
                     <textarea class="secondary-detail" name="${ronda.izquierda.prefijo}Detalle" hidden><c:out value="${ronda.izquierda.detalle}" /></textarea>
                     <div class="secondary-list" id="${ronda.izquierda.prefijo}-secundarias"></div>
-                    <p>Total secundarias: <strong class="secondary-total-text">${ronda.izquierda.secundaria}</strong> VP</p>
+                    <p class="secondary-summary">Secundarias: <strong class="secondary-total-text">${ronda.izquierda.secundaria}</strong> VP</p>
                   </section>
                 </article>
 
                 <div class="separator"></div>
 
-                <article class="player-panel" data-player-panel="${ronda.derecha.prefijo}">
+                <article class="player-panel" id="panel-${ronda.derecha.prefijo}" data-player-panel="${ronda.derecha.prefijo}">
+                  <div class="player-heading">
                   <h3 class="player-title"><c:out value="${ronda.derecha.nombre}" /></h3>
+                  <span class="round-score"><strong data-round-score="${ronda.derecha.prefijo}">0 VP</strong><small>esta ronda</small></span>
+                  </div>
                   <div class="tags">
                     <span class="tag"><c:out value="${ronda.derecha.faccion}" /></span>
                     <c:if test="${ronda.derecha.primero}"><span class="tag">Va primero</span></c:if>
                     <c:if test="${ronda.derecha.defensor}"><span class="tag">Defensor</span></c:if>
                   </div>
 
-                  <c:if test="${not empty ronda.derecha.lista}">
-                    <div class="mission-card"><strong>Lista:</strong> <c:out value="${ronda.derecha.lista}" /></div>
-                  </c:if>
 
                   <c:choose>
                     <c:when test="${ronda.partida.mostrarCommandPoints}">
                       <fieldset class="cp-counter" data-cp-inicio="${ronda.derecha.cpInicio}">
-                        <legend>Command Points (CP)</legend>
+                        <legend>CP · Inicio: ${ronda.derecha.cpInicio}</legend>
                         <div class="cp-balance"><span>Disponibles</span><output class="cp-total" aria-live="polite">${ronda.derecha.cpFin}</output></div>
                         <div class="cp-row">
                           <label>Gastados <input class="cp-spent" type="number" min="0" step="1" name="${ronda.derecha.prefijo}CpGastados" value="${ronda.derecha.cpGastados}" /></label>
                           <label>Ganados <input class="cp-earned" type="number" min="0" step="1" name="${ronda.derecha.prefijo}CpGanados" value="${ronda.derecha.cpGanados}" /></label>
                         </div>
-                        <p class="page-subtitle">En esta ronda &middot; Saldo inicial: ${ronda.derecha.cpInicio} CP</p>
                       </fieldset>
                     </c:when>
                     <c:otherwise>
@@ -280,20 +134,18 @@
                     </c:otherwise>
                   </c:choose>
 
-                  <section class="mission-card">
-                    <h4>Mision principal: <c:out value="${ronda.misionPrincipal.titulo}" /></h4>
-                    <p><c:out value="${ronda.misionPrincipal.descripcion}" /></p>
-                    <p><strong>Puntuacion:</strong> <c:out value="${ronda.misionPrincipal.puntuacion}" /></p>
-                    <label>Puntos primaria <input class="score-input" type="number" min="0" name="${ronda.derecha.prefijo}Primaria" value="${ronda.derecha.primaria}" /></label>
+                  <section class="mission-card primary-card">
+                    <div><h4>Misión principal</h4><button type="button" class="round-config-link" data-round-info="misionPrincipalInfo" data-info-title="Misión principal" aria-haspopup="dialog"><c:out value="${ronda.misionPrincipal.titulo}" /></button></div>
+                    <label>VP <input class="score-input" type="number" min="0" step="1" aria-label="Puntos de misión principal" name="${ronda.derecha.prefijo}Primaria" value="${ronda.derecha.primaria}" /></label>
                   </section>
 
                   <section class="mission-card">
-                    <h4>Misiones secundarias</h4>
-                    <button class="button-secondary abrir-secundarias" type="button" data-prefijo="${ronda.derecha.prefijo}">Elegir secundarias</button>
+                    <div class="secondary-heading"><h4>Secundarias <span class="secondary-count"></span></h4>
+                    <button class="button-secondary abrir-secundarias" type="button" data-prefijo="${ronda.derecha.prefijo}">Elegir</button></div>
                     <input type="hidden" class="secondary-total" name="${ronda.derecha.prefijo}Secundaria" value="${ronda.derecha.secundaria}" />
                     <textarea class="secondary-detail" name="${ronda.derecha.prefijo}Detalle" hidden><c:out value="${ronda.derecha.detalle}" /></textarea>
                     <div class="secondary-list" id="${ronda.derecha.prefijo}-secundarias"></div>
-                    <p>Total secundarias: <strong class="secondary-total-text">${ronda.derecha.secundaria}</strong> VP</p>
+                    <p class="secondary-summary">Secundarias: <strong class="secondary-total-text">${ronda.derecha.secundaria}</strong> VP</p>
                   </section>
                 </article>
               </div>
@@ -303,6 +155,12 @@
       </div>
     </div>
 
+    <template id="misionPrincipalInfo">
+      <h4><c:out value="${ronda.misionPrincipal.titulo}" /></h4>
+      <p><c:out value="${ronda.misionPrincipal.descripcion}" /></p>
+      <p><strong>Puntuación:</strong> <c:out value="${ronda.misionPrincipal.puntuacion}" /></p>
+      <ul><c:forEach items="${ronda.misionPrincipal.condiciones}" var="condicion"><li><c:out value="${condicion}" /></li></c:forEach></ul>
+    </template>
     <dialog class="popup" id="popupSecundarias" aria-labelledby="tituloSecundarias">
       <div class="popup-header">
       <h3 id="tituloSecundarias">Elegir misiones secundarias</h3>
@@ -314,13 +172,32 @@
       </div>
       <div id="listaMisionesPopup">
         <c:forEach items="${ronda.misionesSecundarias}" var="mision">
-          <label class="mission-option">
-            <span><input type="checkbox" value="${mision.id}" /></span>
-            <strong class="mission-title"><c:out value="${mision.titulo}" /></strong>
-            <span class="mission-description"><c:out value="${mision.descripcion}" /></span>
-            <small class="mission-score"><c:out value="${mision.puntuacion}" /></small>
-          </label>
+          <div class="mission-option">
+            <input type="checkbox" value="<c:out value='${mision.id}' />" aria-label="Seleccionar <c:out value='${mision.titulo}' />" />
+            <button type="button" class="mission-title" aria-haspopup="dialog"><c:out value="${mision.titulo}" /></button>
+            <template class="mission-info">
+              <p class="mission-description"><c:out value="${mision.descripcion}" /></p>
+              <p><strong>Puntuación:</strong> <span class="mission-score"><c:out value="${mision.puntuacion}" /></span></p>
+              <ul class="mission-conditions">
+                <c:forEach items="${mision.condiciones}" var="condicion"><li><c:out value="${condicion}" /></li></c:forEach>
+              </ul>
+            </template>
+          </div>
         </c:forEach>
+      </div>
+    </dialog>
+
+    <dialog class="popup" id="popupDetalleMision" aria-labelledby="tituloDetalleMision">
+      <div class="popup-header">
+        <h3 id="tituloDetalleMision"></h3>
+        <button class="button-secondary" type="button" id="cerrarDetalleMision" autofocus>Cerrar</button>
+      </div>
+      <div class="mission-detail-body">
+        <div id="contenidoDetalleMision"></div>
+        <div id="puntuacionDetalleMision" hidden>
+          <label><input type="checkbox" id="misionCumplida" /> Cumplida</label>
+          <label>Puntos <input type="number" id="misionPuntos" min="0" step="1" /></label>
+        </div>
       </div>
     </dialog>
 
@@ -331,6 +208,100 @@
         const botones = document.querySelectorAll(".abrir-secundarias");
         const cerrar = document.getElementById("cerrarSecundarias");
         const random = document.getElementById("randomSecundaria");
+        const detallePopup = document.getElementById("popupDetalleMision");
+        const detalleContenido = document.getElementById("contenidoDetalleMision");
+        const detallePuntos = document.getElementById("misionPuntos");
+        const detalleCumplida = document.getElementById("misionCumplida");
+        let guardarPuntuacion = null;
+
+        document.body.classList.add('round-interactive');
+        function mostrarJugador(prefijo) {
+          document.querySelectorAll('[data-player-panel]').forEach(function (p) {
+            p.classList.toggle('is-current', p.dataset.playerPanel === prefijo);
+          });
+          document.querySelectorAll('[data-show-player]').forEach(function (boton) {
+            boton.setAttribute('aria-pressed', String(boton.dataset.showPlayer === prefijo));
+          });
+        }
+        document.querySelectorAll('[data-show-player]').forEach(function (boton) {
+          boton.addEventListener('click', function () { mostrarJugador(boton.dataset.showPlayer); });
+        });
+        // Si hay un campo inválido en el otro jugador, se muestra antes de que el navegador lo enfoque.
+        document.querySelector('.round-board').addEventListener('invalid', function (event) {
+          const jugador = event.target.closest('[data-player-panel]');
+          if (jugador) mostrarJugador(jugador.dataset.playerPanel);
+        }, true);
+        document.querySelectorAll('[data-round-info]').forEach(function (boton) {
+          boton.addEventListener('click', function () {
+            document.getElementById('tituloDetalleMision').textContent = boton.dataset.infoTitle;
+            detalleContenido.replaceChildren(document.getElementById(boton.dataset.roundInfo).content.cloneNode(true));
+            document.getElementById('puntuacionDetalleMision').hidden = true;
+            guardarPuntuacion = null;
+            detallePopup.showModal();
+          });
+        });
+
+        function actualizarMarcador(prefijo) {
+          const jugador = panel(prefijo);
+          const total = Number(jugador.querySelector('.score-input').value || 0)
+            + Number(jugador.querySelector('.secondary-total').value || 0);
+          document.querySelectorAll('[data-round-score="' + prefijo + '"]').forEach(function (marcador) {
+            marcador.textContent = total + ' VP';
+          });
+        }
+
+        function actualizarEstadoTarjeta(tarjeta, mision) {
+          tarjeta.classList.toggle('is-complete', !!mision.cumplida);
+          tarjeta.querySelector('.secondary-state').textContent = mision.cumplida
+            ? '✓ ' + (mision.puntos || 0) + ' VP' : 'Pendiente';
+        }
+
+        function abrirDetalle(mision, prefijo, misiones) {
+          document.getElementById("tituloDetalleMision").textContent = mision.titulo;
+          detalleContenido.replaceChildren();
+          const fila = Array.from(popup.querySelectorAll('.mission-option')).find(function (opcion) {
+            return opcion.querySelector('input').value === mision.id;
+          });
+          if (fila) {
+            detalleContenido.appendChild(fila.querySelector('.mission-info').content.cloneNode(true));
+          } else {
+            const descripcion = document.createElement('p');
+            descripcion.textContent = mision.descripcion || 'No hay información adicional disponible.';
+            detalleContenido.appendChild(descripcion);
+          }
+          document.getElementById('puntuacionDetalleMision').hidden = !prefijo;
+          guardarPuntuacion = null;
+          if (prefijo) {
+            detalleCumplida.checked = !!mision.cumplida;
+            detallePuntos.value = mision.puntos || 0;
+            guardarPuntuacion = function () {
+              if (!detallePuntos.validity.valid) return;
+              mision.cumplida = detalleCumplida.checked;
+              mision.puntos = Number(detallePuntos.value || 0);
+              actualizarDetalle(prefijo, misiones);
+            };
+          }
+          detallePopup.showModal();
+        }
+
+        detallePuntos.addEventListener('input', function () { if (guardarPuntuacion) guardarPuntuacion(); });
+        detalleCumplida.addEventListener('change', function () { if (guardarPuntuacion) guardarPuntuacion(); });
+        document.getElementById('cerrarDetalleMision').addEventListener('click', function () { detallePopup.close(); });
+        detallePopup.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            detallePopup.close();
+          }
+        });
+        detallePopup.addEventListener('click', function (event) {
+          const rect = detallePopup.getBoundingClientRect();
+          if (event.target === detallePopup && (event.clientX < rect.left || event.clientX > rect.right
+              || event.clientY < rect.top || event.clientY > rect.bottom)) detallePopup.close();
+        });
+        popup.querySelectorAll('.mission-title').forEach(function (boton) {
+          boton.addEventListener('click', function () { abrirDetalle(misionDesdeFila(boton.closest('.mission-option'))); });
+        });
 
         document.querySelectorAll(".cp-counter").forEach(function (contador) {
           const ganados = contador.querySelector(".cp-earned");
@@ -377,6 +348,10 @@
           campoDetalle.value = JSON.stringify(misiones);
           campoTotal.value = String(total);
           textoTotal.textContent = String(total);
+          actualizarMarcador(prefijo);
+          contenedor.querySelectorAll('.secondary-card').forEach(function (tarjeta, indice) {
+            if (misiones[indice]) actualizarEstadoTarjeta(tarjeta, misiones[indice]);
+          });
         }
 
         function guardarDetalle(prefijo, misiones) {
@@ -388,6 +363,7 @@
           const contenedor = panel(prefijo);
           const lista = contenedor.querySelector(".secondary-list");
           const misiones = leerDetalle(prefijo);
+          contenedor.querySelector('.secondary-count').textContent = '(' + misiones.length + ')';
           lista.innerHTML = "";
 
           if (misiones.length === 0) {
@@ -400,23 +376,12 @@
             const tarjeta = document.createElement("div");
             tarjeta.className = "secondary-card";
             tarjeta.innerHTML =
-              "<strong></strong>" +
-              "<p></p>" +
-              "<label class='completed-toggle'><input type='checkbox' class='cumplida' /> Cumplida</label>" +
-              "<label>Puntos <input type='number' min='0' class='puntos-secundaria' /></label>";
+              "<button type='button' class='mission-title' aria-haspopup='dialog'><span class='secondary-name'></span><span class='secondary-state'></span></button>";
 
-            tarjeta.querySelector("strong").textContent = mision.titulo;
-            tarjeta.querySelector("p").textContent = mision.descripcion || "";
-            tarjeta.querySelector(".cumplida").checked = !!mision.cumplida;
-            tarjeta.querySelector(".puntos-secundaria").value = mision.puntos || 0;
-
-            tarjeta.querySelector(".cumplida").addEventListener("change", function () {
-              mision.cumplida = this.checked;
-              actualizarDetalle(prefijo, misiones);
-            });
-            tarjeta.querySelector(".puntos-secundaria").addEventListener("input", function () {
-              mision.puntos = this.value;
-              actualizarDetalle(prefijo, misiones);
+            tarjeta.querySelector('.secondary-name').textContent = mision.titulo;
+            actualizarEstadoTarjeta(tarjeta, mision);
+            tarjeta.querySelector("button").addEventListener("click", function () {
+              abrirDetalle(mision, prefijo, misiones);
             });
 
             lista.appendChild(tarjeta);
@@ -439,7 +404,7 @@
           return {
             id: check.value,
             titulo: fila.querySelector(".mission-title").textContent,
-            descripcion: fila.querySelector(".mission-description").textContent,
+            descripcion: fila.querySelector(".mission-info").content.querySelector(".mission-description").textContent,
             puntos: 0,
             cumplida: false
           };
@@ -498,6 +463,8 @@
 
         document.querySelectorAll("[data-player-panel]").forEach(function (p) {
           pintarSecundarias(p.dataset.playerPanel);
+          actualizarMarcador(p.dataset.playerPanel);
+          p.querySelector('.score-input').addEventListener('input', function () { actualizarMarcador(p.dataset.playerPanel); });
         });
       })();
     </script>

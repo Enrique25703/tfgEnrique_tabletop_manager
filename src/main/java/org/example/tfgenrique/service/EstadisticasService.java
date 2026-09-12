@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -20,7 +19,6 @@ import java.util.Map;
 public class EstadisticasService {
     private static final String FORMATO_40K = "WH40K_11";
     private static final String FORMATO_AOS = "AOS_4";
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final List<String> COLORES = List.of(
             "#5b8def",
             "#69c9a3",
@@ -67,7 +65,7 @@ public class EstadisticasService {
 
         return new EstadisticasView(
                 usuario.getNombreUsuario(),
-                crearEvolucionVictorias(usuario, partidasFinalizadas),
+                crearResultados(partidasFinalizadas),
                 juegos,
                 distribucion40k,
                 distribucionAos,
@@ -87,65 +85,33 @@ public class EstadisticasService {
         return new SelectorJuegoView(codigo, nombre, codigo.equals(juegoSeleccionado), total);
     }
 
-    private EvolucionVictoriasView crearEvolucionVictorias(Usuario usuario, List<Partida> partidasFinalizadas) {
-        LocalDateTime fechaInicio = usuario.getCreadoEn();
-        LocalDateTime fechaFin = partidasFinalizadas.isEmpty()
-                ? fechaInicio
-                : resolverFechaPartida(partidasFinalizadas.get(partidasFinalizadas.size() - 1));
-
-        List<PuntoEvolucionView> puntos = new ArrayList<>();
-        puntos.add(new PuntoEvolucionView(
-                formatearFecha(fechaInicio),
-                "0.0%",
-                0,
-                0,
-                100,
-                0,
-                0
-        ));
-
+    private ResultadosPartidasView crearResultados(List<Partida> partidasFinalizadas) {
         int victorias = 0;
-        int derrotas = 0;
         int empates = 0;
-        int partidasContadas = 0;
-
+        int derrotas = 0;
         for (Partida partida : partidasFinalizadas) {
-            partidasContadas++;
-            if (esVictoriaUsuario(partida)) {
-                victorias++;
-            } else if (Boolean.TRUE.equals(partida.getEsEmpate())) {
-                empates++;
-            } else {
-                derrotas++;
-            }
-
-            double porcentaje = (victorias * 100.0) / partidasContadas;
-            double x = calcularPosicionX(fechaInicio, fechaFin, resolverFechaPartida(partida));
-            double y = 100 - porcentaje;
-            puntos.add(new PuntoEvolucionView(
-                    formatearFecha(resolverFechaPartida(partida)),
-                    formatearPorcentaje(porcentaje),
-                    redondear1Decimal(porcentaje),
-                    redondear1Decimal(x),
-                    redondear1Decimal(y),
-                    victorias,
-                    partidasContadas
-            ));
+            if (Boolean.TRUE.equals(partida.getEsEmpate())) empates++;
+            else if (esVictoriaUsuario(partida)) victorias++;
+            else derrotas++;
         }
-
-        double porcentajeFinal = partidasContadas == 0 ? 0 : (victorias * 100.0) / partidasContadas;
-        return new EvolucionVictoriasView(
-                partidasContadas,
-                victorias,
-                derrotas,
-                empates,
-                formatearPorcentaje(porcentajeFinal),
-                construirPolyline(puntos),
-                puntos,
-                formatearFecha(fechaInicio),
-                formatearFecha(fechaFin),
-                partidasContadas > 0
-        );
+        int total = partidasFinalizadas.size();
+        String[] etiquetas = {"Victorias", "Empates", "Derrotas"};
+        String[] colores = {"#69c9a3", "#f4b860", "#ef6f6c"};
+        int[] cantidades = {victorias, empates, derrotas};
+        List<SegmentoDistribucionView> segmentos = new ArrayList<>();
+        List<String> sectores = new ArrayList<>();
+        int acumulado = 0;
+        for (int i = 0; i < cantidades.length; i++) {
+            double inicio = total == 0 ? 0 : acumulado * 100.0 / total;
+            acumulado += cantidades[i];
+            double fin = total == 0 ? 0 : acumulado * 100.0 / total;
+            segmentos.add(new SegmentoDistribucionView(etiquetas[i], cantidades[i],
+                    formatearPorcentaje(total == 0 ? 0 : cantidades[i] * 100.0 / total), colores[i]));
+            sectores.add(colores[i] + " " + formatearCss(inicio) + "% " + formatearCss(fin) + "%");
+        }
+        return new ResultadosPartidasView(total, victorias, derrotas, empates,
+                segmentos.get(0).porcentaje(), total == 0 ? "#233246"
+                : "conic-gradient(" + String.join(", ", sectores) + ")", List.copyOf(segmentos), total > 0);
     }
 
     private DistribucionJuegoView crearDistribucionJuego(
@@ -258,31 +224,6 @@ public class EstadisticasService {
         return FORMATO_40K;
     }
 
-    private double calcularPosicionX(LocalDateTime inicio, LocalDateTime fin, LocalDateTime actual) {
-        long inicioEpoch = inicio.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-        long finEpoch = fin.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-        long actualEpoch = actual.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-        if (finEpoch <= inicioEpoch) {
-            return 100;
-        }
-        return ((actualEpoch - inicioEpoch) * 100.0) / (finEpoch - inicioEpoch);
-    }
-
-    private String construirPolyline(List<PuntoEvolucionView> puntos) {
-        StringBuilder polyline = new StringBuilder();
-        for (PuntoEvolucionView punto : puntos) {
-            if (!polyline.isEmpty()) {
-                polyline.append(' ');
-            }
-            polyline.append(formatearCss(punto.x())).append(',').append(formatearCss(punto.y()));
-        }
-        return polyline.toString();
-    }
-
-    private String formatearFecha(LocalDateTime fecha) {
-        return fecha == null ? "" : FECHA.format(fecha);
-    }
-
     private String formatearPorcentaje(double valor) {
         return String.format(Locale.US, "%.1f%%", valor);
     }
@@ -291,17 +232,13 @@ public class EstadisticasService {
         return String.format(Locale.US, "%.2f", valor);
     }
 
-    private double redondear1Decimal(double valor) {
-        return Math.round(valor * 10.0) / 10.0;
-    }
-
     private String normalizarTexto(String texto) {
         return texto == null ? "" : texto.trim();
     }
 
     public record EstadisticasView(
             String nombreUsuario,
-            EvolucionVictoriasView evolucionVictorias,
+            ResultadosPartidasView resultados,
             List<SelectorJuegoView> juegos,
             DistribucionJuegoView distribucion40k,
             DistribucionJuegoView distribucionAos,
@@ -309,28 +246,15 @@ public class EstadisticasService {
     ) {
     }
 
-    public record EvolucionVictoriasView(
+    public record ResultadosPartidasView(
             int partidasFinalizadas,
             int victorias,
             int derrotas,
             int empates,
             String porcentajeVictorias,
-            String polylinePoints,
-            List<PuntoEvolucionView> puntos,
-            String fechaInicio,
-            String fechaFin,
+            String graficaCss,
+            List<SegmentoDistribucionView> segmentos,
             boolean tieneDatos
-    ) {
-    }
-
-    public record PuntoEvolucionView(
-            String fecha,
-            String porcentaje,
-            double porcentajeValor,
-            double x,
-            double y,
-            int victorias,
-            int partidas
     ) {
     }
 

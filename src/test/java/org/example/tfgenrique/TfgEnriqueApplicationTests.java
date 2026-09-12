@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @EnabledIfEnvironmentVariable(named = "TFG_DB_PASSWORD", matches = ".+")
 class TfgEnriqueApplicationTests {
 
-    /** Requires a MySQL schema initialized from sql/CopiaSeguridadBaseDatos.sql. */
+    /** Requires a MySQL schema initialized from BaseDatosTabletopManager.sql. */
     @Test
     void contextLoads() {
     }

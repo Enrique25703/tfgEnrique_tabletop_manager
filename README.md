@@ -1,38 +1,114 @@
-# TFG Enrique
+# Tabletop Manager
 
-Aplicacion Spring Boot para gestionar usuarios, comunidades, partidas y listas de ejercito de Warhammer 40,000 y Age of Sigmar.
+Aplicación web desarrollada como Trabajo de Fin de Grado para facilitar la gestión de partidas, listas de ejército y comunidades de juegos de miniaturas.
 
-## Requisitos
+Actualmente permite trabajar con **Warhammer 40.000** y **Age of Sigmar**.
 
-- Java 17
-- Maven 3.9 o el wrapper incluido
-- MySQL 8
+## Funcionalidades principales
 
-## Configuracion local
+- Registro, inicio de sesión y edición del perfil de usuario.
+- Consulta de catálogos de facciones, ejércitos y unidades.
+- Creación y almacenamiento de listas de ejército.
+- Exportación de listas compatibles a PDF.
+- Seguimiento de partidas por rondas, misiones y puntuaciones.
+- Historial de partidas con filtros por juego, fecha y resultado.
+- Estadísticas personales de victorias, derrotas y facciones utilizadas.
+- Creación de comunidades, gestión de miembros y organización de eventos.
+- Panel de administración para gestionar usuarios y comunidades.
 
-La aplicacion no guarda credenciales en el repositorio. Define estas variables en tu entorno o crea un fichero local `.env` a partir de `.env.example`:
+## Tecnologías utilizadas
 
-```powershell
-$env:TFG_DB_URL = "jdbc:mysql://localhost:3306/tfgenrique?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci"
-$env:TFG_DB_USERNAME = "tu_usuario"
-$env:TFG_DB_PASSWORD = "tu_contrasena"
+- Java 17.
+- Spring Boot 4.
+- Spring MVC y JSP/JSTL para la interfaz web.
+- Spring Data JPA e Hibernate.
+- MySQL 8.
+- Maven.
+- Apache PDFBox para generar documentos PDF.
+- BCrypt para almacenar las contraseñas de forma segura.
+
+## Estructura del proyecto
+
+```text
+src/main/java        Código Java: controladores, servicios, repositorios y entidades
+src/main/resources   Configuración, catálogos, imágenes, CSS y JavaScript
+src/main/webapp      Vistas JSP
+src/test/java        Pruebas automatizadas
+BaseDatosTabletopManager.sql  Esquema completo para crear la base de datos
+sql                           Migraciones para instalaciones existentes
 ```
 
-Inicializa una instalacion nueva con `sql/CopiaSeguridadBaseDatos.sql`. Para bases ya existentes, ejecuta los scripts de `sql/migrations` en orden antes de desplegar.
+La aplicación sigue una organización por capas:
 
-## Ejecutar y validar
+- `controller`: recibe las peticiones HTTP y prepara las vistas.
+- `service`: contiene las reglas y procesos de negocio.
+- `dao`: contiene los repositorios y consultas de acceso a datos.
+- `entity`: representa las tablas de la base de datos mediante JPA.
+
+## Requisitos para ejecutar el proyecto
+
+- JDK 17.
+- MySQL 8 en ejecución.
+- Maven 3.9 o el wrapper incluido en el repositorio.
+- Conexión a Internet para descargar inicialmente los catálogos externos de los juegos.
+
+## Preparación de la base de datos
+
+Para crear una instalación nueva, hay que ejecutar el archivo situado en la raíz del proyecto:
+
+```text
+BaseDatosTabletopManager.sql
+```
+
+El script crea la base de datos `tfgenrique`, sus tablas, los datos básicos de los sistemas de juego y una cuenta de administración inicial:
+
+```text
+Usuario: admin
+Contraseña: admin
+```
+
+Los scripts de `sql/migrations` deben aplicarse en orden cuando se actualiza una base de datos existente.
+
+## Configuración
+
+Las credenciales de MySQL no se guardan en el repositorio. Hay que copiar `.env.example` como `.env` en la raíz del proyecto y completar sus valores:
+
+```properties
+TFG_DB_URL=jdbc:mysql://localhost:3306/tfgenrique?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci
+TFG_DB_USERNAME=usuario_mysql
+TFG_DB_PASSWORD=contrasena_mysql
+```
+
+## Ejecución
+
+En Windows:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
+```
+
+En Linux o macOS:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Una vez iniciada, la aplicación está disponible en:
+
+```text
+http://localhost:8080
+```
+
+## Pruebas
+
+Para ejecutar las pruebas automatizadas:
+
+```powershell
 .\mvnw.cmd test
 ```
 
-## Estructura
+Las pruebas utilizan una base de datos H2 aislada cuando corresponde, por lo que no modifican los datos almacenados en MySQL.
 
-- `controller`: endpoints HTTP y preparacion de vistas JSP.
-- `service`: reglas de negocio y casos de uso.
-- `dao`: persistencia de entidades y modelos de lectura.
-- `entity`: mapeos JPA del esquema relacional.
-- `sql`: esquema inicial y migraciones incrementales.
+## Autor
 
-Las consultas nativas necesarias para extraer listas almacenadas como JSON estan aisladas en `ListaEjercitoConsultaRepository`; los repositorios de entidades no incluyen logica de presentacion.
+Enrique Silveira García — Trabajo de Fin de Grado

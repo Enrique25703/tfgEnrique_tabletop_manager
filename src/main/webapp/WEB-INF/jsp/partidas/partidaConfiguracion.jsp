@@ -199,11 +199,13 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="/css/partida-creacion.css" />
   </head>
-  <body>
-    <c:set var="sidebarActive" value="partidas" />
+  <body class="setup-page setup-config">
+    <c:set var="sidebarActive" value="partidas" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="true" />
     <c:set var="partida" value="${configuracion.partida}" />
+    <c:set var="esAos" value="${partida.sistemaJuego.codigo eq 'AOS_4'}" />
     <div class="app-shell">
       <jsp:include page="/WEB-INF/jsp/header.jsp" />
 
@@ -211,7 +213,7 @@
         <main class="page-content">
           <section class="page-panel">
             <div class="page-header">
-              <h2 class="page-title">Layout y opciones</h2>
+              <h2 class="page-title">Despliegue y opciones</h2>
               <p class="page-subtitle">Configura la mesa y las opciones para <c:out value="${configuracion.estiloJuegoTexto}" />.</p>
             </div>
 
@@ -221,9 +223,8 @@
 
             <form class="config-card" method="post" action="/partidas/${partida.id}/configuracion" id="configuracionForm">
               <div class="form-grid">
+                <c:if test="${not esAos}">
                 <section class="mission-shell">
-                  <h3>Mision</h3>
-                  <p class="helper-copy">La seleccion comienza en CUSTOM y el resto de opciones siguen disponibles para futuras variantes.</p>
                   <label>
                     Seleccion de mision
                     <select id="tipoMisionSelect" name="tipoMision">
@@ -241,20 +242,34 @@
                   </label>
                 </section>
 
+                </c:if>
                 <section class="selector-shell">
                   <div class="selector-header">
                     <div>
-                      <h3>Configuracion visual</h3>
-                      <p class="helper-copy" id="textoMisionCustom">Estas definiendo la combinacion de layout y despliegue para la mision seleccionada.</p>
                       <p class="helper-copy" id="textoDespliegueFijo"></p>
                       <p class="helper-copy" id="textoLayoutRestringido"></p>
                     </div>
-                    <span class="style-pill"><c:out value="${configuracion.estiloJuegoTexto}" /></span>
                   </div>
 
                   <c:choose>
+                    <c:when test="${esAos}">
+                      <article class="visual-card">
+                        <label>Despliegue
+                          <select id="despliegueSelect" name="despliegue" required>
+                            <c:forEach var="despliegue" items="${configuracion.desplieguesSimetricos}">
+                              <option value="<c:out value='${despliegue.codigo}' />" data-image="${despliegue.imagenUrl}"
+                                      data-label="<c:out value='${despliegue.nombre}' />" ${partida.despliegueMision eq despliegue.codigo ? 'selected' : ''}><c:out value="${despliegue.nombre}" /></option>
+                            </c:forEach>
+                          </select>
+                        </label>
+                        <div class="preview-card">
+                          <span class="preview-label">Vista del despliegue</span>
+                          <strong id="desplieguePreviewTitle"></strong>
+                          <img class="preview-image" id="desplieguePreviewImage" alt="Despliegue seleccionado" data-modal-trigger="true" />
+                        </div>
+                      </article>
+                    </c:when>
                     <c:when test="${configuracion.juegoEquilibrado}">
-                      <p class="helper-copy">Juego equilibrado usa layouts y despliegues simetricos.</p>
                       <div class="visual-grid">
                         <article class="visual-card">
                           <label>
@@ -304,7 +319,6 @@
                       </div>
                     </c:when>
                     <c:otherwise>
-                      <p class="helper-copy">Juego asimetrico no usa layout. Solo eliges el despliegue que quieres crear.</p>
                       <article class="visual-card">
                         <label>
                           Despliegue
@@ -419,6 +433,7 @@
                   Ver contador de command points
                 </label>
 
+                <c:if test="${not esAos}">
                 <label class="check-line">
                   <c:choose>
                     <c:when test="${partida.usarCartasGiro}">
@@ -430,6 +445,7 @@
                   </c:choose>
                   Usar cartas de giro
                 </label>
+                </c:if>
 
                 <div class="form-actions">
                   <a class="button-secondary" href="/partidas/${partida.id}/jugadores">Atras</a>
@@ -523,7 +539,7 @@
             selectorDespliegue.value = opcionDespliegue.value;
           }
           selectorDespliegue.disabled = true;
-          textoDespliegueFijo.textContent = "El despliegue queda fijado por esta mision: " + (nombreFijo || "Despliegue predefinido");
+          textoDespliegueFijo.textContent = "Despliegue fijado por la misión.";
           textoDespliegueFijo.classList.add("locked");
           pintarPreview("despliegueSelect", "desplieguePreviewTitle", "desplieguePreviewImage");
         }
@@ -598,9 +614,9 @@
           }
 
           if (totalDisponibles === 1 && primerLayoutDisponible) {
-            textoLayoutRestringido.textContent = "Esta mision deja un unico layout valido: " + (primerLayoutDisponible.dataset.baseLabel || primerLayoutDisponible.textContent) + ".";
+            textoLayoutRestringido.textContent = "Un único layout permitido.";
           } else {
-            textoLayoutRestringido.textContent = "Esta mision solo permite los layouts recomendados marcados en el selector.";
+            textoLayoutRestringido.textContent = "Solo se permiten los layouts recomendados.";
           }
           textoLayoutRestringido.classList.add("locked");
         }

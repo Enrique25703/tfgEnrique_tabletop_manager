@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Info unidad AoS</title>
     <link rel="stylesheet" href="/css/app-shell.css" />
+    <link rel="stylesheet" href="/css/catalogos.css" />
     <style>
       .two-column {
         display: grid;
@@ -37,13 +38,17 @@
       }
     </style>
   </head>
-  <body>
+  <body class="catalog-screen">
     <c:url var="volverCatalogoUrl" value="/catalogo-aos">
       <c:param name="faccion" value="${infoUnidadAos.faccionSeleccionada}" />
       <c:param name="ejercito" value="${infoUnidadAos.ejercitoSeleccionado}" />
+      <c:param name="buscarUnidad" value="${param.buscarUnidad}" />
+      <c:param name="ocultarLegends" value="${param.ocultarLegends}" />
+      <c:param name="ocultarAliados" value="${param.ocultarAliados}" />
+      <c:param name="ocultarEstructuras" value="${param.ocultarEstructuras}" />
     </c:url>
 
-    <c:set var="sidebarActive" value="catalogos" />
+    <c:set var="sidebarActive" value="catalogos" scope="request" />
     <c:set var="sidebarComunidadesEnabled" value="false" />
     <div class="app-shell">
       <jsp:include page="/WEB-INF/jsp/header.jsp" />
@@ -62,7 +67,7 @@
             <div class="page-header">
               <h2 class="page-title"><c:out value="${infoUnidadAos.nombreUnidad}" /></h2>
               <p class="page-subtitle">
-                <a class="link-inline" href="${volverCatalogoUrl}">Volver al catalogo</a>
+                <a class="link-inline" href="<c:out value='${volverCatalogoUrl}' />">Volver al catálogo</a>
                 ·
                 <c:out value="${infoUnidadAos.faccionSeleccionada}" />
                 -
